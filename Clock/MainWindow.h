@@ -47,10 +47,13 @@ private:
 	ID2D1Factory * pFactory;
 	ID2D1HwndRenderTarget * pRenderTarget;
 	ID2D1SolidColorBrush * pBrush;			
+	ID2D1SolidColorBrush * pBrushHand;			
 	D2D1_ELLIPSE			ellipse;		
 
 	// Recalculate Drawing layout when the size of the Window changes.
 	void CalculateLayout();
+	void DrawClockHand(float fHandLength, float fAngle, float fStrockeWidth);
+	void RenderClock();
 
 	// Create the Resource needed for Drawing
 	HRESULT CreateGraphicsResource();

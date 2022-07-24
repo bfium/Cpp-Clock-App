@@ -64,6 +64,48 @@ void MainWindow::CalculateLayout()
 	ellipse = D2D1::Ellipse(D2D1::Point2F(x, y), radius, radius);
 }
 
+void MainWindow::DrawClockHand(float fHandLength, float fAngle, float fStrockeWidth)
+{
+	pRenderTarget->SetTransform(
+		D2D1::Matrix3x2F::Rotation(fAngle, ellipse.point)
+	);
+
+	// endPoint defines one end of the hand.
+	D2D_POINT_2F endPoint = D2D1::Point2F(
+		ellipse.point.x,
+		ellipse.point.y - (ellipse.radiusY * fHandLength)
+	);
+
+	// Draw a line from the center of the ellipse to endPoint.
+	pRenderTarget->DrawLine(
+		ellipse.point, 
+		endPoint, 
+		pBrush, 
+		fStrockeWidth
+	);
+}
+
+void MainWindow::RenderClock()
+{
+	pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::SkyBlue));
+
+	pRenderTarget->FillEllipse(ellipse, pBrush);
+
+	// Draw hands
+	SYSTEMTIME time;
+	GetLocalTime(&time);
+
+	// 60 minutes = 30 degrees, 1 minute = 0.5 degree
+	const float fHourAngle = (360.0f / 12) * (time.wHour) + (time.wMinute * 0.5f);
+	const float fMinuteAngle = (360.0f / 60) * (time.wMinute);
+
+	DrawClockHand(0.6f, fHourAngle, 6);
+	DrawClockHand(0.85f, fMinuteAngle, 4);
+
+	// Restore the identity transformation.
+	pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+}
+
 HRESULT MainWindow::CreateGraphicsResource()
 {
 	HRESULT hr = S_OK;
@@ -78,7 +120,8 @@ HRESULT MainWindow::CreateGraphicsResource()
 
 		if (SUCCEEDED(hr))
 		{
-			const D2D1_COLOR_F color = D2D1::ColorF(1.0f, 0.0f, 1.0f, 0.1f);
+			const D2D1_COLOR_F color = D2D1::ColorF(1.0f, 1.0f, 0.0f, 0.5f);
+			const D2D1_COLOR_F handColor = D2D1::ColorF(1.0f, 0.0f, 0.0f, 0.5f);
 			/*
 				// Initialize a magenta color.
 				D2D1_COLOR_F clr;
@@ -88,6 +131,7 @@ HRESULT MainWindow::CreateGraphicsResource()
 				clr.a = 1;  // Opaque.
 			*/
 			hr = pRenderTarget->CreateSolidColorBrush(color, &pBrush);
+			hr = pRenderTarget->CreateSolidColorBrush(handColor, &pBrushHand);
 
 			if (SUCCEEDED(hr))
 			{
@@ -116,7 +160,8 @@ void MainWindow::OnPaint()
 		BeginPaint(m_hwnd, &ps);
 
 		pRenderTarget->BeginDraw();
-		pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::LightSkyBlue));		// Draw Command 1
+		pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::SkyBlue));		// Draw Command 1
+		RenderClock();
 		hr = pRenderTarget->EndDraw();		// check if the Draw was successful
 
 		// Direct2D signals a lost device by returning the error code D2DERR_RECREATE_TARGET from the EndDraw method. 
