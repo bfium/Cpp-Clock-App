@@ -18,6 +18,9 @@
     <ClCompile Include="Clock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MainWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico">
@@ -29,6 +32,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MainWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

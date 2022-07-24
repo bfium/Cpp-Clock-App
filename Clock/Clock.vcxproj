@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Clock.cpp" />
+    <ClCompile Include="MainWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Clock.ico" />
@@ -159,6 +160,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseWindow.h" />
+    <ClInclude Include="MainWindow.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -18,3 +18,33 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
+#ifndef UNICODE
+#define UNICODE
+#endif // UNICODE
+
+#include<Windows.h>
+#include"MainWindow.h"
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPInstance, PWSTR pCmdLine, int nCmdShow)
+{
+	MainWindow win;
+
+	if (!win.Create(L"Clock App", WS_OVERLAPPEDWINDOW,WS_EX_WINDOWEDGE,400,400,400,400))
+	{
+		return 0;
+	}
+
+	ShowWindow(win.Window(), nCmdShow);
+
+	// enter the message loop: The application needs a loop to retrieve the messages and dispatch them to the correct windows.
+	MSG message = {};
+	while (GetMessage(&message, NULL, 0, 0) > 0)
+	{
+		// exemple of message: #define WM_LBUTTONDOWN    0x0201
+
+		TranslateMessage(&message);
+		DispatchMessage(&message);
+	}
+
+
+	return 0;
+}
