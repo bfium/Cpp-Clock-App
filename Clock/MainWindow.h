@@ -51,7 +51,6 @@ private:
 	D2D1_ELLIPSE			ellipse;		
 
 	// Recalculate Drawing layout when the size of the Window changes.
-	void CalculateLayout();
 	void DrawClockHand(float fHandLength, float fAngle, float fStrockeWidth);
 	void RenderClock();
 

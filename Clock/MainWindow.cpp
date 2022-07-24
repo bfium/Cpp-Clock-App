@@ -48,21 +48,6 @@ LRESULT MainWindow::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return TRUE;
 }
 
-void MainWindow::CalculateLayout()
-{
-	// Get the Size of the Render Target
-	D2D1_SIZE_F size = pRenderTarget->GetSize(); // returns the size of the render target in DIPs (not pixels), which is the appropriate unit for calculating layout.
-
-	// get the Center of the Render Target
-	const float x = size.width / 2;
-	const float y = size.height / 2;
-
-	// the radius of the ellipse according to the width and the heigh
-	const float radius = min(x, y);
-
-	// create the Ellipse
-	ellipse = D2D1::Ellipse(D2D1::Point2F(x, y), radius, radius);
-}
 
 void MainWindow::DrawClockHand(float fHandLength, float fAngle, float fStrockeWidth)
 {
@@ -87,6 +72,20 @@ void MainWindow::DrawClockHand(float fHandLength, float fAngle, float fStrockeWi
 
 void MainWindow::RenderClock()
 {
+	// Get the Size of the Render Target
+	D2D1_SIZE_F size = pRenderTarget->GetSize(); // returns the size of the render target in DIPs (not pixels), which is the appropriate unit for calculating layout.
+
+	// get the Center of the Render Target
+	const float x = size.width / 2;
+	const float y = size.height / 2;
+
+	// the radius of the ellipse according to the width and the heigh
+	const float radius = min(x, y);
+
+	// create the Ellipse
+	ellipse = D2D1::Ellipse(D2D1::Point2F(x, y), radius, radius);
+
+
 	pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::SkyBlue));
 
 	pRenderTarget->FillEllipse(ellipse, pBrush);
@@ -133,9 +132,9 @@ HRESULT MainWindow::CreateGraphicsResource()
 			hr = pRenderTarget->CreateSolidColorBrush(color, &pBrush);
 			hr = pRenderTarget->CreateSolidColorBrush(handColor, &pBrushHand);
 
-			if (SUCCEEDED(hr))
+			if (FAILED(hr))
 			{
-				CalculateLayout();
+				DiscardGraphicsResource();
 			}
 		}
 
@@ -186,7 +185,7 @@ void MainWindow::Resize()
 		D2D1_SIZE_U size = D2D1::SizeU(rc.right, rc.bottom);
 
 		pRenderTarget->Resize(size);
-		CalculateLayout();
+		RenderClock();
 
 
 
