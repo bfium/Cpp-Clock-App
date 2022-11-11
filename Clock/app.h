@@ -37,7 +37,7 @@ namespace external
         
     } // namespace user
 
-    namespace io_device
+    namespace device
     {
         namespace input_device
         {
@@ -51,8 +51,8 @@ namespace external
         namespace input_output_device
         {
             
-        } // namespace input_output_device 
-    } // namespace device
+        } // namespace input_output_device
+    }     // namespace device
 
     namespace system
     {
@@ -112,7 +112,7 @@ namespace abstract
             //     if(c)
             //         delete c;
             // }
-            // using unique_command_ptr = std::unique_ptr<Command, &release>;
+            // using unique_command_ptr = std::unique_ptr<Command, dcltype(&release)>;
 
             class CommandFactory
             {
@@ -125,11 +125,13 @@ namespace abstract
             {
             private:
                 friend class Command;
-                std::map<std::string, std::unique_ptr<Command>> m_commands;
 
             public:
                 ~CommandRepository() {}
                 std::unique_ptr<Command> get(const std::string &) const;
+
+            private:
+                std::map<std::string, std::unique_ptr<Command>> m_commands;
             };
         } // namespace command
 
@@ -336,7 +338,7 @@ namespace app
     {
         namespace data
         {
-            struct Angle : public abstract::data::InputData
+            struct RotateInputData : public abstract::data::InputData
             {
                 double m_angle;
             };
@@ -344,7 +346,7 @@ namespace app
             class RotateCommandFactory: public abstract::data::command::CommandFactory
             {                
             public:
-                std::unique_ptr<Command> create(InputData) const override;
+                std::unique_ptr<Command> create(const InputData&) const override;
                 ~RotateCommandFactory() {}
             };
         } // namespace data
@@ -353,131 +355,154 @@ namespace app
         {
             namespace user_interaction
             {
-                class UserInterface : public service_system::publisher::Publisher
+                class UserInterface : protected service_system::publisher::Publisher,public abstract::boundary::user_interaction::UserInteraction
                 {
-                private:
+                    static const std::string inputEntered;
+
                 public:
                     virtual ~UserInterface() {}
+
+                public:
+                    using Publisher::notify;
+                    using Publisher::subscribe;
+                    using Publisher::unsubscribe;
+
+                public:
+                    // virtual void sendInput(const char *) = 0;
+                    // virtual void sendInput(std::unique_ptr<abstract::data::InputData>) = 0;
                 };
 
-                namespace gui
+                namespace cli
                 {
-                    template <class TYPE>
-                    class BaseWindow
+                    class Cli: public UserInterface
                     {
                     public:
-                        // The Ctor of the Base Class.
-                        BaseWindow() : m_hwnd(NULL) {}
-
-                        static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-                        {
-                            TYPE *pThis = NULL;
-
-                            if (uMsg == WM_NCCREATE)
-                            {
-                                CREATESTRUCT *pCreate = (CREATESTRUCT *)lParam;
-                                pThis = (TYPE *)pCreate->lpCreateParams;
-                                SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
-
-                                pThis->m_hwnd = hwnd;
-                            }
-                            else
-                            {
-                                pThis = (TYPE *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-                            }
-                            if (pThis)
-                            {
-                                return pThis->HandleMessage(uMsg, wParam, lParam);
-                            }
-                            else
-                            {
-                                return DefWindowProc(hwnd, uMsg, wParam, lParam);
-                            }
-                        }
-
-                        BOOL Create(
-                            PCWSTR lpWindowName,
-                            DWORD dwStyle,
-                            DWORD dwExStyle = 0,
-                            int x = CW_USEDEFAULT,
-                            int y = CW_USEDEFAULT,
-                            int nWidth = CW_USEDEFAULT,
-                            int nHeight = CW_USEDEFAULT,
-                            HWND hWndParent = 0,
-                            HMENU hMenu = 0)
-                        {
-                            WNDCLASS wc = {0};
-
-                            wc.lpfnWndProc = TYPE::WindowProc;
-                            wc.hInstance = GetModuleHandle(NULL);
-                            wc.lpszClassName = ClassName();
-
-                            RegisterClass(&wc);
-
-                            m_hwnd = CreateWindowEx(
-                                dwExStyle,
-                                ClassName(),
-                                lpWindowName,
-                                dwStyle,
-                                x,
-                                y,
-                                nWidth,
-                                nHeight,
-                                hWndParent,
-                                hMenu,
-                                GetModuleHandle(NULL),
-                                this);
-
-                            return (m_hwnd ? TRUE : FALSE);
-                        }
-
-                        HWND Window() const { return m_hwnd; }
-
-                    protected:
-                        virtual PCWSTR ClassName() const = 0;
-                        virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
-
-                        HWND m_hwnd;
-                    };
-
-                    template <class T>
-                    void SafeRelease(T **ppT)
-                    {
-                        if (*ppT)
-                        {
-                            (*ppT)->Release();
-                            *ppT = NULL;
-                        }
-                    }
-
-                    class MainWindow : public BaseWindow<MainWindow>
-                    {
-                    public:
-                        MainWindow() : pFactory(NULL), pRenderTarget(NULL), pBrush(NULL) {}
-
-                        PCWSTR ClassName() const { return L"Sample Window Class"; }
-                        LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
+                        Cli(std::istream&is,std::ostream&os) :m_is{is},m_os{os}{}
+                        ~Cli() {}
+                        void notify(){} override; 
+                        void sendInput(const char *) override;
+                        void sendInput(std::unique_ptr<abstract::data::InputData>) override;
+                        void run();
 
                     private:
-                        // COM interfaces...
-                        ID2D1Factory *pFactory;
-                        ID2D1HwndRenderTarget *pRenderTarget;
-                        ID2D1SolidColorBrush *pBrush;
-                        ID2D1SolidColorBrush *pBrushHand;
-                        D2D1_ELLIPSE ellipse;
-
-                        // Recalculate Drawing layout when the size of the Window changes.
-                        void DrawClockHand(float fHandLength, float fAngle, float fStrockeWidth);
-                        void RenderClock();
-
-                        // Create the Resource needed for Drawing
-                        HRESULT CreateGraphicsResource();
-                        void DiscardGraphicsResource();
-
-                        // Draw
-                        void OnPaint();
-                        void Resize();
+                        std::istream m_is;
+                        std::ostream m_os;
                     };
+                } // namespace cli
+                
+                namespace gui
+                {
+                    // template <class TYPE>
+                    // class BaseWindow
+                    // {
+                    // public:
+                    //     // The Ctor of the Base Class.
+                    //     BaseWindow() : m_hwnd(NULL) {}
+                    //     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+                    //     {
+                    //         TYPE *pThis = NULL;
+                    //         if (uMsg == WM_NCCREATE)
+                    //         {
+                    //             CREATESTRUCT *pCreate = (CREATESTRUCT *)lParam;
+                    //             pThis = (TYPE *)pCreate->lpCreateParams;
+                    //             SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
+                    //             pThis->m_hwnd = hwnd;
+                    //         }
+                    //         else
+                    //         {
+                    //             pThis = (TYPE *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+                    //         }
+                    //         if (pThis)
+                    //         {
+                    //             return pThis->HandleMessage(uMsg, wParam, lParam);
+                    //         }
+                    //         else
+                    //         {
+                    //             return DefWindowProc(hwnd, uMsg, wParam, lParam);
+                    //         }
+                    //     }
+
+                    //     BOOL Create(
+                    //         PCWSTR lpWindowName,
+                    //         DWORD dwStyle,
+                    //         DWORD dwExStyle = 0,
+                    //         int x = CW_USEDEFAULT,
+                    //         int y = CW_USEDEFAULT,
+                    //         int nWidth = CW_USEDEFAULT,
+                    //         int nHeight = CW_USEDEFAULT,
+                    //         HWND hWndParent = 0,
+                    //         HMENU hMenu = 0)
+                    //     {
+                    //         WNDCLASS wc = {0};
+
+                    //         wc.lpfnWndProc = TYPE::WindowProc;
+                    //         wc.hInstance = GetModuleHandle(NULL);
+                    //         wc.lpszClassName = ClassName();
+                    //         RegisterClass(&wc);
+                    //         m_hwnd = CreateWindowEx(
+                    //             dwExStyle,
+                    //             ClassName(),
+                    //             lpWindowName,
+                    //             dwStyle,
+                    //             x,
+                    //             y,
+                    //             nWidth,
+                    //             nHeight,
+                    //             hWndParent,
+                    //             hMenu,
+                    //             GetModuleHandle(NULL),
+                    //             this);
+
+                    //         return (m_hwnd ? TRUE : FALSE);
+                    //     }
+
+                    //     HWND Window() const { return m_hwnd; }
+
+                    // protected:
+                    //     virtual PCWSTR ClassName() const = 0;
+                    //     virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
+
+                    //     HWND m_hwnd;
+                    // };
+
+                    // template <class T>
+                    // void SafeRelease(T **ppT)
+                    // {
+                    //     if (*ppT)
+                    //     {
+                    //         (*ppT)->Release();
+                    //         *ppT = NULL;
+                    //     }
+                    // }
+
+                    // class MainWindow : public BaseWindow<MainWindow>
+                    // {
+                    // public:
+                    //     MainWindow() : pFactory(NULL), pRenderTarget(NULL), pBrush(NULL) {}
+
+                    //     PCWSTR ClassName() const { return L"Sample Window Class"; }
+                    //     LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+                    // private:
+                    //     // COM interfaces...
+                    //     ID2D1Factory *pFactory;
+                    //     ID2D1HwndRenderTarget *pRenderTarget;
+                    //     ID2D1SolidColorBrush *pBrush;
+                    //     ID2D1SolidColorBrush *pBrushHand;
+                    //     D2D1_ELLIPSE ellipse;
+
+                    //     // Recalculate Drawing layout when the size of the Window changes.
+                    //     void DrawClockHand(float fHandLength, float fAngle, float fStrockeWidth);
+                    //     void RenderClock();
+
+                    //     // Create the Resource needed for Drawing
+                    //     HRESULT CreateGraphicsResource();
+                    //     void DiscardGraphicsResource();
+
+                    //     // Draw
+                    //     void OnPaint();
+                    //     void Resize();
+                    // };
 
                 } // namespace gui
             } // namespace user_interaction
