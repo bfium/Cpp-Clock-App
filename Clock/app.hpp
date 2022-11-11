@@ -584,7 +584,7 @@ namespace app
                 class ModelObserver : public abstract::boundary::proxy::Observer
                 {
                 public:
-                    ModelObserver(client::view::user_interaction::UserInterface &u) m_ui{u} {}
+                    ModelObserver(client::view::user_interaction::UserInterface &u): m_ui{u} {}
                     ~ModelObserver() {}
 
                 private:
