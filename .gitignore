@@ -31,8 +31,8 @@
 *.out
 *.app
 *.vs
- .vcxproj
- .vcxproj.filters
+*.vcxproj
+*.vcxproj.filters
 
 # build
 *.suo
@@ -49,7 +49,7 @@
 *.user
 *.userosscache
 *.sln.docstates
- .sln
+*.sln
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
