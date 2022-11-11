@@ -19,11 +19,16 @@
 
 */
 #include<string>
+#include<stack>
 #include<vector>
 #include<iosfwd>
 #include<memory>
 #include<map>
 #include<unordered_map>
+
+#include <Windows.h>
+#include <d2d1.h>
+#pragma comment(lib, "d2d1")
 
 namespace external
 {
@@ -113,7 +118,7 @@ namespace abstract
             {
             public:
                 virtual~CommandFactory() {}
-                virtual std::unique_ptr<Command> create() const = 0;
+                virtual std::unique_ptr<Command> create(InputData) const = 0;
             };
 
             class CommandRepository
@@ -127,6 +132,16 @@ namespace abstract
                 std::unique_ptr<Command> get(const std::string &) const;
             };
         } // namespace command
+
+        namespace shape
+        {
+            class Shape
+            {
+            public:
+                virtual~Shape() {}
+            };
+        } // namespace shape
+        
     } // namespace data_abstraction
 
     namespace boundary
@@ -140,7 +155,7 @@ namespace abstract
                 virtual~Observer() {}
                 void notify(std::shared_ptr<abstract::data::InputData> d) { notifyImpl(d); }
 
-            private:
+            protected:
                 virtual void notifyImpl(std::shared_ptr < abstract::data::InputData> d) = 0;
 
             private:
@@ -183,7 +198,7 @@ namespace abstract
             {
             public:
                 virtual~Disptacher() {}
-                virtual void dispatch(const char *cmd, const char *sender)noexcept=0;
+                virtual void dispatch(const char *cmd, const char *sender) noexcept = 0;
             };
         } // namespace state_dependent_control
         
@@ -238,7 +253,7 @@ namespace abstract
 
 namespace service_system
 {
-    namespace Publisher
+    namespace publisher
     {
         enum EventType
         {
@@ -299,3 +314,300 @@ namespace service_system
     
 } // namespace service_system
 
+namespace app
+{
+    namespace data
+    {
+        namespace command
+        {
+            class RotateCommand : public abstract::data::command::Command
+            {
+            public:
+                RotateCommand(double angle):m_angle{angle}{}
+                ~RotateCommand();
+
+            private:
+                double m_angle;
+            };
+        } // namespace command
+    }     // namespace data;
+    
+    namespace client
+    {
+        namespace data
+        {
+            struct Angle : public abstract::data::InputData
+            {
+                double m_angle;
+            };
+
+            class RotateCommandFactory: public abstract::data::command::CommandFactory
+            {                
+            public:
+                std::unique_ptr<Command> create(InputData) const override;
+                ~RotateCommandFactory() {}
+            };
+        } // namespace data
+
+        namespace view
+        {
+            namespace user_interaction
+            {
+                class UserInterface : public service_system::publisher::Publisher
+                {
+                private:
+                public:
+                    virtual ~UserInterface() {}
+                };
+
+                namespace gui
+                {
+                    template <class TYPE>
+                    class BaseWindow
+                    {
+                    public:
+                        // The Ctor of the Base Class.
+                        BaseWindow() : m_hwnd(NULL) {}
+
+                        static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+                        {
+                            TYPE *pThis = NULL;
+
+                            if (uMsg == WM_NCCREATE)
+                            {
+                                CREATESTRUCT *pCreate = (CREATESTRUCT *)lParam;
+                                pThis = (TYPE *)pCreate->lpCreateParams;
+                                SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
+
+                                pThis->m_hwnd = hwnd;
+                            }
+                            else
+                            {
+                                pThis = (TYPE *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+                            }
+                            if (pThis)
+                            {
+                                return pThis->HandleMessage(uMsg, wParam, lParam);
+                            }
+                            else
+                            {
+                                return DefWindowProc(hwnd, uMsg, wParam, lParam);
+                            }
+                        }
+
+                        BOOL Create(
+                            PCWSTR lpWindowName,
+                            DWORD dwStyle,
+                            DWORD dwExStyle = 0,
+                            int x = CW_USEDEFAULT,
+                            int y = CW_USEDEFAULT,
+                            int nWidth = CW_USEDEFAULT,
+                            int nHeight = CW_USEDEFAULT,
+                            HWND hWndParent = 0,
+                            HMENU hMenu = 0)
+                        {
+                            WNDCLASS wc = {0};
+
+                            wc.lpfnWndProc = TYPE::WindowProc;
+                            wc.hInstance = GetModuleHandle(NULL);
+                            wc.lpszClassName = ClassName();
+
+                            RegisterClass(&wc);
+
+                            m_hwnd = CreateWindowEx(
+                                dwExStyle,
+                                ClassName(),
+                                lpWindowName,
+                                dwStyle,
+                                x,
+                                y,
+                                nWidth,
+                                nHeight,
+                                hWndParent,
+                                hMenu,
+                                GetModuleHandle(NULL),
+                                this);
+
+                            return (m_hwnd ? TRUE : FALSE);
+                        }
+
+                        HWND Window() const { return m_hwnd; }
+
+                    protected:
+                        virtual PCWSTR ClassName() const = 0;
+                        virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
+
+                        HWND m_hwnd;
+                    };
+
+                    template <class T>
+                    void SafeRelease(T **ppT)
+                    {
+                        if (*ppT)
+                        {
+                            (*ppT)->Release();
+                            *ppT = NULL;
+                        }
+                    }
+
+                    class MainWindow : public BaseWindow<MainWindow>
+                    {
+                    public:
+                        MainWindow() : pFactory(NULL), pRenderTarget(NULL), pBrush(NULL) {}
+
+                        PCWSTR ClassName() const { return L"Sample Window Class"; }
+                        LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+                    private:
+                        // COM interfaces...
+                        ID2D1Factory *pFactory;
+                        ID2D1HwndRenderTarget *pRenderTarget;
+                        ID2D1SolidColorBrush *pBrush;
+                        ID2D1SolidColorBrush *pBrushHand;
+                        D2D1_ELLIPSE ellipse;
+
+                        // Recalculate Drawing layout when the size of the Window changes.
+                        void DrawClockHand(float fHandLength, float fAngle, float fStrockeWidth);
+                        void RenderClock();
+
+                        // Create the Resource needed for Drawing
+                        HRESULT CreateGraphicsResource();
+                        void DiscardGraphicsResource();
+
+                        // Draw
+                        void OnPaint();
+                        void Resize();
+                    };
+
+                } // namespace gui
+            } // namespace user_interaction
+        } // namespace view
+        
+        namespace controller
+        {
+            namespace state_dependent_control
+            {
+                class ClockDispatcher: public abstract::control::state_dependent_control::Disptacher
+                {
+                private:
+                    
+                public:
+                    ClockDispatcher(view::UserInterface&);
+                    ~ClockDispatcher();
+                    void dispatch(const char *cmd, const char *sender) noexcept override;
+                };                
+            } // namespace state_dependent_control
+        } // namespace controller
+        
+        namespace  view
+        {
+            namespace boundary
+            {
+                namespace proxy
+                {
+                    class ViewObserver
+                    {
+                    private:
+                        client::controller::state_dependent_control::ClockDispatcher m_cd;
+
+                    public:
+                        ViewObserver(client::controller::state_dependent_control::ClockDispatcher &c) : m_cd{c} {}
+                        ~ViewObserver() {}
+                    };
+                } // namespace proxy
+            } // namespace boundary
+        } // namespace  view 
+    } // namespace client
+
+    namespace server
+    {
+        namespace data
+        {
+            namespace shape
+            {
+                class Rectangle : public abstract::data::shape::Shape
+                {
+                public:
+                    Rectangle(double x1, double y1, double x2, double y2)
+                        : m_x1{x1}, m_y1{y1}, m_x2{x2}, m_y2{y2} {}
+                    ~Rectangle() {}
+
+                private:
+                    double m_x1, m_y1, m_x2, m_y2;
+                };
+
+                class Circle : public abstract::data::shape::Shape
+                {
+                private:
+                    double m_x, m_y, m_radius;
+
+                public:
+                    Circle(double x,double y,double r):m_x(x),m_y(y),m_radius(r) {}
+                    ~Circle() {}
+                };
+            } // namespace shape
+
+            class Model
+            {
+            private:
+                /* data */
+            public:
+                Model(/* args */) {}
+                ~Model() {}
+            };
+        } // namespace data
+
+        namespace logic
+        {
+            namespace business
+            {
+                class ClockManager : public abstract::logic::business::Manager
+                {
+                public:
+                    void manage(std::shared_ptr<abstract::data::command::Command> c) noexcept override;
+                    ~ClockManager() {}
+                    void undo();
+                    void redo();
+
+                private:
+                    std::stack < std::unique_ptr<Command>> m_undo_repository;
+                    std::stack < std::unique_ptr<Command>> m_redo_repository;
+                };
+            } // namespace business
+
+        } // namespace service
+        
+        namespace boundary  
+        {
+            namespace proxy
+            {
+                class ModelObserver : public abstract::boundary::proxy::Observer
+                {
+                public:
+                    ModelObserver(client::view::user_interaction::UserInterface &u) m_ui{u} {}
+                    ~ModelObserver() {}
+
+                private:
+                    void notifyImpl(std::shared_ptr<abstract::data::InputData> d) override;
+
+                private:
+                    client::view::user_interaction::UserInterface &m_ui;
+                };
+            } // namespace proxy
+            
+        } // namespace boundary
+
+    } // namespace server
+
+    class Facade
+    {
+    private:
+        //client::view::user_interaction::gui::MainWindow m_window;
+        //server::
+    public:
+        Facade() {}
+        ~Facade() {}
+        void run();
+    };
+
+} // namespace app
