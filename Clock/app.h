@@ -26,9 +26,9 @@
 #include<map>
 #include<unordered_map>
 
-#include <Windows.h>
-#include <d2d1.h>
-#pragma comment(lib, "d2d1")
+// #include <Windows.h>
+// #include <d2d1.h>
+// #pragma comment(lib, "d2d1")
 
 namespace external
 {
@@ -118,7 +118,7 @@ namespace abstract
             {
             public:
                 virtual~CommandFactory() {}
-                virtual std::unique_ptr<Command> create(const InputData&) const = 0;
+                virtual std::unique_ptr<Command> create(std::unique_ptr<abstract::data::InputData>) const = 0;
             };
 
             class CommandRepository
@@ -308,7 +308,7 @@ namespace service_system
             size_t size() const { return m_tokens.size(); }
 
         private:
-            void tokenize(std::istream is) noexcept;
+            void tokenize(std::istream& is) noexcept;
         private:
             std::vector<std::string> m_tokens;
         };
@@ -327,6 +327,7 @@ namespace app
             public:
                 RotateCommand(double angle):m_angle{angle}{}
                 ~RotateCommand();
+                void executeImpl() override;
 
             private:
                 double m_angle;
@@ -346,7 +347,7 @@ namespace app
             class RotateCommandFactory: public abstract::data::command::CommandFactory
             {                
             public:
-                std::unique_ptr<Command> create(const InputData&) const override;
+                std::unique_ptr<abstract::data::command::Command> create(std::unique_ptr< abstract::data::InputData >) const override;
                 ~RotateCommandFactory() {}
             };
         } // namespace data
@@ -379,14 +380,14 @@ namespace app
                     public:
                         Cli(std::istream&is,std::ostream&os) :m_is{is},m_os{os}{}
                         ~Cli() {}
-                        void notify(){} override; 
+                        void notify() override; 
                         void sendInput(const char *) override;
                         void sendInput(std::unique_ptr<abstract::data::InputData>) override;
                         void run();
 
                     private:
-                        std::istream m_is;
-                        std::ostream m_os;
+                        std::istream& m_is;
+                        std::ostream& m_os;
                     };
                 } // namespace cli
                 
@@ -513,14 +514,15 @@ namespace app
             namespace state_dependent_control
             {
                 class ClockDispatcher: public abstract::control::state_dependent_control::Disptacher
-                {
-                private:
-                    
+                {                    
                 public:
-                    ClockDispatcher(view::UserInterface&);
+                    ClockDispatcher(view::user_interaction::UserInterface &ui):m_ui{ui}{};
                     ~ClockDispatcher();
                     void dispatch(const char *cmd, const char *sender) noexcept override;
-                };                
+
+                private:
+                    view::user_interaction::UserInterface &m_ui;
+                };
             } // namespace state_dependent_control
         } // namespace controller
         
@@ -533,7 +535,7 @@ namespace app
                     class ViewObserver
                     {
                     private:
-                        client::controller::state_dependent_control::ClockDispatcher m_cd;
+                        client::controller::state_dependent_control::ClockDispatcher &m_cd;
 
                     public:
                         ViewObserver(client::controller::state_dependent_control::ClockDispatcher &c) : m_cd{c} {}
@@ -595,8 +597,8 @@ namespace app
                     void redo();
 
                 private:
-                    std::stack < std::unique_ptr<Command>> m_undo_repository;
-                    std::stack < std::unique_ptr<Command>> m_redo_repository;
+                    std::stack < std::unique_ptr<abstract::data::command::Command>> m_undo_repository;
+                    std::stack<std::unique_ptr<abstract::data::command::Command>> m_redo_repository;
                 };
             } // namespace business
 
@@ -609,7 +611,7 @@ namespace app
                 class ModelObserver : public abstract::boundary::proxy::Observer
                 {
                 public:
-                    ModelObserver(client::view::user_interaction::UserInterface &u): m_ui{u} {}
+                    ModelObserver(client::view::user_interaction::UserInterface &u) : Observer("ModelObserver"), m_ui{u} {}
                     ~ModelObserver() {}
 
                 private:
