@@ -23,18 +23,21 @@
 #define UNICODE
 #endif // UNICODE
 
-#include<Windows.h>
-#include"MainWindow.h"
+#include"app.hpp"
+
+using namespace app;
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPInstance, PWSTR pCmdLine, int nCmdShow)
 {
-	MainWindow win;
 
-	if (!win.Create(L"Clock App", WS_OVERLAPPEDWINDOW, WS_EX_APPWINDOW, 400, 400, 400, 400))
-	{
-		return 0;
-	}
+	//MainWindow win;
+	Facade facade;
+	facade.run();
+	
+	//if (!win.Create(L"Clock App", WS_OVERLAPPEDWINDOW, WS_EX_APPWINDOW, 400, 400, 400, 400))
+	//	return 0;
 
-	ShowWindow(win.Window(), nCmdShow);
+	//ShowWindow(win.Window(), nCmdShow);
 
 	// enter the message loop: The application needs a loop to retrieve the messages and dispatch them to the correct windows.
 	MSG message{};
