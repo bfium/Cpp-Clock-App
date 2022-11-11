@@ -68,19 +68,19 @@ namespace abstract
         class Data
         {
         public:
-            virtual ~Data() = default;
+            virtual ~Data(){}
         };
 
         class InputData : public Data
         {
         public:
-            virtual ~InputData() = default;
+            virtual~InputData() = default;
         };
 
         class OutputData : public Data
         {
         public:
-            virtual ~OutputData() = default;
+            virtual~OutputData() = default;
         };
 
         namespace command

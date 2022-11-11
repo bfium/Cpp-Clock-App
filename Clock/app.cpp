@@ -146,8 +146,8 @@ namespace app
         {
             std::unique_ptr<abstract::data::command::Command> RotateCommandFactory::create(std::unique_ptr< abstract::data::InputData> d) const
             {
-                auto data = std::dynamic_pointer_cast<RotateInputData>(d);
-                return std::make_unique<app::data::command::RotateCommand>(new app::data::command::RotateCommand(data.m_angle));
+                auto dat = dynamic_cast<RotateInputData*>(std::move(d));
+                return std::make_unique<app::data::command::RotateCommand>(new app::data::command::RotateCommand(dat->m_angle));
             }
         } // namespace data
 
@@ -242,7 +242,7 @@ namespace app
         } // namespace boundary
 
     } // namespace server
-    
+
     void Facade::run(){
 
     }
