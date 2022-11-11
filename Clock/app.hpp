@@ -118,13 +118,13 @@ namespace abstract
             {
             public:
                 virtual~CommandFactory() {}
-                virtual std::unique_ptr<Command> create(InputData) const = 0;
+                virtual std::unique_ptr<Command> create(const InputData&) const = 0;
             };
 
             class CommandRepository
             {
             private:
-                friend Command;
+                friend class Command;
                 std::map<std::string, std::unique_ptr<Command>> m_commands;
 
             public:
