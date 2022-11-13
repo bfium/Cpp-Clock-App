@@ -68,7 +68,7 @@ namespace abstract
         class Data
         {
         public:
-            virtual ~Data(){}
+            virtual ~Data() = default;
         };
 
         class InputData : public Data
