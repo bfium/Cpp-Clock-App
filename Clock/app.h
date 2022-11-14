@@ -465,7 +465,6 @@ namespace app
 
                     //     HWND m_hwnd;
                     // };
-
                     // template <class T>
                     // void SafeRelease(T **ppT)
                     // {
@@ -475,7 +474,6 @@ namespace app
                     //         *ppT = NULL;
                     //     }
                     // }
-
                     // class MainWindow : public BaseWindow<MainWindow>
                     // {
                     // public:
