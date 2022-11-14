@@ -34,23 +34,23 @@ namespace external
 {
     namespace user
     {
-        
+
     } // namespace user
 
     namespace device
     {
         namespace input_device
         {
-            
+
         } // namespace input_device
 
         namespace output_device
         {
-            
+
         } // namespace output_device
         namespace input_output_device
         {
-            
+
         } // namespace input_output_device
     }     // namespace device
 
@@ -58,7 +58,7 @@ namespace external
     {
         // RAS
     } // namespace system
-    
+
 } // namespace external
 
 namespace abstract
@@ -97,16 +97,16 @@ namespace abstract
 
             protected:
                 Command() = default;
-                Command(const Command &) = default;
+                Command(const Command&) = default;
             protected:
                 virtual void executeImpl() = 0;
-                virtual void preConditionCheck(){};
-                virtual void postConditionCheck(){};
+                virtual void preConditionCheck() {};
+                virtual void postConditionCheck() {};
 
             private:
-                Command(Command &&) = delete;
-                Command &operator=(const Command &) = delete;
-                Command &operator=(Command &&) = delete;
+                Command(Command&&) = delete;
+                Command& operator=(const Command&) = delete;
+                Command& operator=(Command&&) = delete;
             };
             // inline void release(Command*c){
             //     if(c)
@@ -128,7 +128,7 @@ namespace abstract
 
             public:
                 ~CommandRepository() {}
-                std::unique_ptr<Command> get(const std::string &) const;
+                std::unique_ptr<Command> get(const std::string&) const;
 
             private:
                 std::map<std::string, std::unique_ptr<Command>> m_commands;
@@ -143,19 +143,20 @@ namespace abstract
                 virtual~Shape() {}
             };
         } // namespace shape
-        
+
     } // namespace data_abstraction
 
     namespace boundary
     {
         namespace proxy
-        {            
+        {
             class Observer
             {
             public:
-                Observer(const std::string& n):m_name{n} {}
-                virtual~Observer() {}
+                Observer(const std::string& n) :m_name{ n } {}
+                virtual~Observer() = default;
                 void notify(std::shared_ptr<abstract::data::InputData> d) { notifyImpl(d); }
+                const std::string& getName() const { return m_name; }
 
             protected:
                 virtual void notifyImpl(std::shared_ptr < abstract::data::InputData> d) = 0;
@@ -168,21 +169,21 @@ namespace abstract
         namespace user_interaction
         {
             class UserInteraction
-            {                
+            {
             public:
                 virtual ~UserInteraction() = default;
                 virtual void notify() {};       // if MVC
-                virtual void sendInput(const char *) = 0;
+                virtual void sendInput(const char*) = 0;
                 virtual void sendInput(std::unique_ptr<abstract::data::InputData>) = 0;
             };
         } // namespace user_interaction
-        
+
         namespace io_device
         {
-            
+
         } // namespace io_device   
     } // namespace boundary
-    
+
     namespace control
     {
         namespace coordinator
@@ -200,10 +201,10 @@ namespace abstract
             {
             public:
                 virtual~Disptacher() {}
-                virtual void dispatch(const char *cmd, const char *sender) noexcept = 0;
+                virtual void dispatch(const char* cmd, const char* sender) noexcept = 0;
             };
         } // namespace state_dependent_control
-        
+
         namespace timer
         {
             class Timer
@@ -230,23 +231,23 @@ namespace abstract
             class Manager
             {
             private:
-                
+
             public:
                 virtual~Manager() {}
                 virtual void manage(std::shared_ptr<abstract::data::command::Command> c)noexcept = 0;
             };
         } // namespace business
-        
+
         namespace service
         {
             class Service
             {
             public:
                 virtual ~Service() = default;
-                virtual const std::string &getName() const = 0;
-                virtual const std::string &getLocation() const = 0;
-                virtual const std::string &getDescription() const = 0;
-                virtual std::unique_ptr<abstract::data::OutputData> transform(std::shared_ptr<abstract::data::InputData> i) noexcept{};                
+                virtual const std::string& getName() const = 0;
+                virtual std::string getLocation() const = 0;
+                virtual std::string getDescription() const = 0;
+                virtual std::unique_ptr<abstract::data::OutputData> transform(std::shared_ptr<abstract::data::InputData> i) noexcept { return nullptr; };
             };
 
         } // namespace service
@@ -261,29 +262,30 @@ namespace service_system
         {
             DEFAULT,
         };
+
         class Publisher : public abstract::logic::service::Service
         {
             static const std::string name;
-
-            using o_list = std::unordered_map<std::string, abstract::boundary::proxy::Observer>;
-            using event_o_list = std::unordered_map<std::string, o_list>;
+            class PublisherImpl;
 
         public:
-            const std::string &getName() const override;
-            const std::string &getLocation() const override;
-            const std::string &getDescription() const override;
+            Publisher();
+            void subscribe(const std::string& eventName, std::unique_ptr<abstract::boundary::proxy::Observer> observer);
+            std::unique_ptr<abstract::boundary::proxy::Observer> unsubscribe(const std::string& eventName, const std::string& observerName);
+            const std::string& getName() const { return name; }
+            std::string getLocation() const { return "publihser service"; }
+            std::string getDescription() const { return "used for notification"; }
+            virtual std::unique_ptr<abstract::data::OutputData> transform(std::shared_ptr<abstract::data::InputData> i) noexcept
+            {
+                return nullptr;
+            };
 
-        public:
-            virtual~Publisher() {}
-            void notify(const std::string &e, std::shared_ptr<abstract::data::InputData> d);
-            //void notify(EventType e, std::shared_ptr<abstract::data::InputData> d);
-            void subscribe(const std::string &e, std::unique_ptr<abstract::boundary::proxy::Observer> o);
-            std::unique_ptr<abstract::boundary::proxy::Observer> unsubscribe(const std::string &event, const std::string &oName) noexcept;
-        protected:
-            void registerEvent(const std::string &);
+            virtual ~Publisher();
+            void notify(const std::string& eventName, std::shared_ptr<abstract::data::InputData>) const;
+            void registerEvent(const std::string& eventName);
 
         private:
-            event_o_list m_observers;
+            std::unique_ptr<PublisherImpl> impl;
         };
     } // namespace Publisher
 
@@ -295,9 +297,9 @@ namespace service_system
             static const std::string name;
 
         public:
-            const std::string &getName() const override;
-            const std::string &getLocation() const override;
-            const std::string &getDescription() const override;
+            const std::string& getName() const override;
+            std::string getLocation() const override;
+            std::string getDescription() const override;
 
         public:
             Tokenizer(std::string);
@@ -313,7 +315,7 @@ namespace service_system
             std::vector<std::string> m_tokens;
         };
     } // namespace tokenizer
-    
+
 } // namespace service_system
 
 namespace app
@@ -325,7 +327,7 @@ namespace app
             class RotateCommand : public abstract::data::command::Command
             {
             public:
-                RotateCommand(double angle):m_angle{angle}{}
+                RotateCommand(double angle) :m_angle{angle} {}
                 ~RotateCommand();
                 void executeImpl() override;
 
@@ -334,7 +336,7 @@ namespace app
             };
         } // namespace command
     }     // namespace data;
-    
+
     namespace client
     {
         namespace data
@@ -344,8 +346,8 @@ namespace app
                 double m_angle;
             };
 
-            class RotateCommandFactory: public abstract::data::command::CommandFactory
-            {                
+            class RotateCommandFactory : public abstract::data::command::CommandFactory
+            {
             public:
                 std::unique_ptr<abstract::data::command::Command> create(std::unique_ptr< abstract::data::InputData >) const override;
                 ~RotateCommandFactory() {}
@@ -356,7 +358,7 @@ namespace app
         {
             namespace user_interaction
             {
-                class UserInterface : protected service_system::publisher::Publisher,public abstract::boundary::user_interaction::UserInteraction
+                class UserInterface : protected service_system::publisher::Publisher, public abstract::boundary::user_interaction::UserInteraction
                 {
                     static const std::string inputEntered;
 
@@ -375,13 +377,13 @@ namespace app
 
                 namespace cli
                 {
-                    class Cli: public UserInterface
+                    class Cli : public UserInterface
                     {
                     public:
-                        Cli(std::istream&is,std::ostream&os) :m_is{is},m_os{os}{}
+                        Cli(std::istream& is, std::ostream& os) :m_is{ is }, m_os{ os }{}
                         ~Cli() {}
-                        void notify() override; 
-                        void sendInput(const char *) override;
+                        void notify() override;
+                        void sendInput(const char*) override;
                         void sendInput(std::unique_ptr<abstract::data::InputData>) override;
                         void run();
 
@@ -390,7 +392,7 @@ namespace app
                         std::ostream& m_os;
                     };
                 } // namespace cli
-                
+
                 namespace gui
                 {
                     // template <class TYPE>
@@ -506,24 +508,24 @@ namespace app
                 } // namespace gui
             } // namespace user_interaction
         } // namespace view
-        
+
         namespace controller
         {
             namespace state_dependent_control
             {
-                class ClockDispatcher: public abstract::control::state_dependent_control::Disptacher
-                {                    
+                class ClockDispatcher : public abstract::control::state_dependent_control::Disptacher
+                {
                 public:
-                    ClockDispatcher(view::user_interaction::UserInterface &ui):m_ui{ui}{};
+                    ClockDispatcher(view::user_interaction::UserInterface & ui) :m_ui{ui} {};
                     ~ClockDispatcher();
-                    void dispatch(const char *cmd, const char *sender) noexcept override;
+                    void dispatch(const char* cmd, const char* sender) noexcept override;
 
                 private:
-                    view::user_interaction::UserInterface &m_ui;
+                    view::user_interaction::UserInterface& m_ui;
                 };
             } // namespace state_dependent_control
         } // namespace controller
-        
+
         namespace  view
         {
             namespace boundary
@@ -533,10 +535,10 @@ namespace app
                     class ViewObserver
                     {
                     private:
-                        client::controller::state_dependent_control::ClockDispatcher &m_cd;
+                        client::controller::state_dependent_control::ClockDispatcher& m_cd;
 
                     public:
-                        ViewObserver(client::controller::state_dependent_control::ClockDispatcher &c) : m_cd{c} {}
+                        ViewObserver(client::controller::state_dependent_control::ClockDispatcher& c) : m_cd{ c } {}
                         ~ViewObserver() {}
                     };
                 } // namespace proxy
@@ -567,7 +569,7 @@ namespace app
                     double m_x, m_y, m_radius;
 
                 public:
-                    Circle(double x,double y,double r):m_x(x),m_y(y),m_radius(r) {}
+                    Circle(double x,double y,double r) :m_x(x),m_y(y),m_radius(r) {}
                     ~Circle() {}
                 };
             } // namespace shape
@@ -601,25 +603,25 @@ namespace app
             } // namespace business
 
         } // namespace service
-        
-        namespace boundary  
+
+        namespace boundary
         {
             namespace proxy
             {
                 class ModelObserver : public abstract::boundary::proxy::Observer
                 {
                 public:
-                    ModelObserver(client::view::user_interaction::UserInterface &u) : Observer("ModelObserver"), m_ui{u} {}
+                    ModelObserver(client::view::user_interaction::UserInterface & u) : Observer("ModelObserver"), m_ui{u} {}
                     ~ModelObserver() {}
 
                 private:
                     void notifyImpl(std::shared_ptr<abstract::data::InputData> d) override;
 
                 private:
-                    client::view::user_interaction::UserInterface &m_ui;
+                    client::view::user_interaction::UserInterface& m_ui;
                 };
             } // namespace proxy
-            
+
         } // namespace boundary
 
     } // namespace server
