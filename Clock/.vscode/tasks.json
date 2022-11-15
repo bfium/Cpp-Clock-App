@@ -9,6 +9,7 @@
                 "-stdlib=libc++",
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
+                "-Wunused-private-field",
                 "-Wall",
                 "-g",
                 "${file}",
