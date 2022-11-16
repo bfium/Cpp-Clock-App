@@ -1,20 +1,26 @@
-
 /*
     Copyright (C) 2022  Barth.Feudong
     Author can be contacted here: <https://github.com/mrSchaffman/Cpp-Clock-App>
+
     This file is part of the Clock project. using the Win32 API and The COM
+
     Clock is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
+
     Clock is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
+
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 */
 #include"app.h"
+#include<iostream>
+#include<algorithm>
 
 namespace abstract
 {
@@ -22,8 +28,13 @@ namespace abstract
     {
         namespace command
         {
-            std::unique_ptr<Command> CommandRepository::get(const std::string &) const
+            std::unique_ptr<Command> CommandRepository::get(const std::string& d) const
             {
+                //auto ptr = std::find(m_commands.cbegin(), m_commands.cend(), [&](auto& d) {return d->getName() == s; });
+                //if (ptr != m_commands.cend())
+                //{
+                //   // return std::make_unique<Command*>(ptr->second->clone());// Command need to implement the clone function
+                //}
                 return nullptr;
             }
 
@@ -87,31 +98,19 @@ namespace service_system
 {
     namespace publisher
     {
-        class Publisher::PublisherImpl{
-            public:
-                void subscribe(const std::string &eventName, std::unique_ptr<abstract::boundary::proxy::Observer> observer);
-                std::unique_ptr<abstract::boundary::proxy::Observer> unsubscribe(const std::string &eventName, const std::string &observerName);
-                virtual std::unique_ptr<abstract::data::OutputData> transform(std::shared_ptr<abstract::data::InputData> i) noexcept;
-                void notify(const std::string &eventName, std::shared_ptr<abstract::data::InputData>) const;
-                void registerEvent(const std::string &eventName);
-
-            private:
-        };
-
         const std::string Publisher::name = "publisher";
 
-        void Publisher::notify(const std::string &eventName, std::shared_ptr<abstract::data::InputData>) const
-        {
+        void Publisher::notify(const std::string& e, std::shared_ptr<abstract::data::InputData> d)const {
             //to do
         }
-        void Publisher::subscribe(const std::string &e, std::unique_ptr<abstract::boundary::proxy::Observer> o){
+        void Publisher::subscribe(const std::string& e, std::unique_ptr<abstract::boundary::proxy::Observer> o) {
             // to do
         }
-        std::unique_ptr<abstract::boundary::proxy::Observer> Publisher::unsubscribe(const std::string &event, const std::string &oName) noexcept{
-            // to do
+        std::unique_ptr<abstract::boundary::proxy::Observer> Publisher::unsubscribe(const std::string& event, const std::string& oName) {
+
             return nullptr;
         }
-        void Publisher::registerEvent(const std::string &){
+        void Publisher::registerEvent(const std::string&) {
             // to do
         }
 
@@ -119,13 +118,20 @@ namespace service_system
 
     namespace tokenizer
     {
-        Tokenizer::Tokenizer(std::string){
+        const std::string Tokenizer::name = "tokenizer";
+
+        Tokenizer::Tokenizer(std::string s) {
 
         }
+
         void Tokenizer::tokenize(std::istream& is) noexcept
         {
-
         }
+
+        const std::string& Tokenizer::getName() const { return name; }
+        std::string Tokenizer::getLocation() const { return "tokenizer service"; }
+        std::string Tokenizer::getDescription() const { return "used for tokenization"; }
+
     } // namespace tokenizer
 
 } // namespace service_system
@@ -136,8 +142,8 @@ namespace app
     {
         namespace command
         {
-            void RotateCommand::executeImpl(){
-
+            void RotateCommand::executeImpl() {
+                std::cout << "rotate with : " << std::endl;
             }
         } // namespace command
     }// namespace data;
@@ -148,8 +154,8 @@ namespace app
         {
             std::unique_ptr<abstract::data::command::Command> RotateCommandFactory::create(std::unique_ptr< abstract::data::InputData> d) const
             {
-                //auto dat = dynamic_cast<RotateInputData*>(std::move(d));
-                //return std::make_unique<app::data::command::RotateCommand>(new app::data::command::RotateCommand(dat->m_angle));
+                // auto dat = dynamic_cast<RotateInputData*>(std::move(d));
+                // return std::make_unique<app::data::command::RotateCommand>(new app::data::command::RotateCommand(dat->m_angle));
                 return nullptr;
             }
         } // namespace data
@@ -162,19 +168,19 @@ namespace app
 
                 namespace cli
                 {
-                    void Cli::notify(){
+                    void Cli::notify() {
 
                     }
-                    void Cli::sendInput(const char *){
+                    void Cli::sendInput(const char*) {
 
                     }
-                    void Cli::sendInput(std::unique_ptr<abstract::data::InputData>){
+                    void Cli::sendInput(std::unique_ptr<abstract::data::InputData>) {
 
                     }
-                    void Cli::run(){
+                    void Cli::run() {
 
                     }
-                
+
                 } // namespace cli
 
                 namespace gui
@@ -187,7 +193,7 @@ namespace app
         {
             namespace state_dependent_control
             {
-                void ClockDispatcher::dispatch(const char *cmd, const char *sender) noexcept {
+                void ClockDispatcher::dispatch(const char* cmd, const char* sender) noexcept {
 
                 }
 
@@ -220,13 +226,13 @@ namespace app
         {
             namespace business
             {
-                void ClockManager::manage(std::shared_ptr<abstract::data::command::Command> c) noexcept{
+                void ClockManager::manage(std::shared_ptr<abstract::data::command::Command> c) noexcept {
 
                 }
-                void ClockManager::undo(){
+                void ClockManager::undo() {
 
                 }
-                void ClockManager::redo(){
+                void ClockManager::redo() {
 
                 }
             } // namespace business
@@ -239,6 +245,10 @@ namespace app
             {
                 void ModelObserver::notifyImpl(std::shared_ptr<abstract::data::InputData> d)
                 {
+#ifdef _DEBUG
+                    std::cout << "ModelObserver::notifyImpl()" << std::endl;
+#endif // _DEBUG
+
                 }
             } // namespace proxy
 
@@ -246,7 +256,10 @@ namespace app
 
     } // namespace server
 
-    void Facade::run(){
+    void Facade::run() {
+#ifdef _DEBUG
+        std::cout << "Facade::run()" << std::endl;
+#endif // _DEBUG
 
     }
-}
+} // namespace app

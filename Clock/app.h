@@ -270,14 +270,17 @@ namespace service_system
 
         public:
             Publisher();
-            virtual ~Publisher();
-
             void subscribe(const std::string& eventName, std::unique_ptr<abstract::boundary::proxy::Observer> observer);
             std::unique_ptr<abstract::boundary::proxy::Observer> unsubscribe(const std::string& eventName, const std::string& observerName);
             const std::string& getName() const { return name; }
             std::string getLocation() const { return "publihser service"; }
             std::string getDescription() const { return "used for notification"; }
-            virtual std::unique_ptr<abstract::data::OutputData> transform(std::shared_ptr<abstract::data::InputData> i) noexcept;
+            virtual std::unique_ptr<abstract::data::OutputData> transform(std::shared_ptr<abstract::data::InputData> i) noexcept
+            {
+                return nullptr;
+            };
+
+            virtual ~Publisher();
             void notify(const std::string& eventName, std::shared_ptr<abstract::data::InputData>) const;
             void registerEvent(const std::string& eventName);
 
@@ -294,9 +297,9 @@ namespace service_system
             static const std::string name;
 
         public:
-            const std::string &getName() const { return name; }
-            std::string getLocation() const { return "tokenizer service"; }
-            std::string getDescription() const { return "used for string tokenization"; }
+            const std::string& getName() const override;
+            std::string getLocation() const override;
+            std::string getDescription() const override;
 
         public:
             Tokenizer(std::string);
