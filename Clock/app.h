@@ -18,6 +18,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
+
 #include<string>
 #include<stack>
 #include<vector>
@@ -26,9 +27,9 @@
 #include<map>
 #include<unordered_map>
 
-// #include <Windows.h>
-// #include <d2d1.h>
-// #pragma comment(lib, "d2d1")
+#include <Windows.h>
+#include <d2d1.h>
+#pragma comment(lib, "d2d1")
 
 namespace external
 {
