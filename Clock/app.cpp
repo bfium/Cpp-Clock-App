@@ -166,37 +166,48 @@ namespace service_system
 
 	namespace tokenizer
 	{
-		const std::string Tokenizer::name = "tokenizer";
-
-		Tokenizer::Tokenizer(const string& s, char token) {
-			string ss = s;
-			size_t pos{};
-			while ((pos = ss.find(token)) != std::string::npos)
-				ss.replace(pos, 1, " ");
-			std::istringstream is{ ss };
-
-			tokens_.assign(std::istream_iterator<string>{is}, std::istream_iterator<string>{});
-
-			for (auto& i : tokens_)
-				std::transform(i.begin(), i.end(), i.begin(), ::toupper);
-		}
-		Tokenizer::Tokenizer(const string& s)
+		namespace logic
 		{
-			std::istringstream iss{ s };
+			namespace business
+			{
 
-			tokenize(iss);
-		}
+			} // namespace business
 
-		Tokenizer::~Tokenizer()
-		{
-		}
+			namespace service
+			{
+				const std::string TokenizerService::name = "tokenizer";
 
-		void Tokenizer::tokenize(std::istream& is) noexcept
-		{
-			tokens_.assign(std::istream_iterator<string>{is}, std::istream_iterator<string>{});
+				data::TokenizerOutputData* TokenizerService::tokenize(const string& s, char token)
+				noexcept {
+					string ss = s;
+					size_t pos{};
+					while ((pos = ss.find(token)) != std::string::npos)
+						ss.replace(pos, 1, " ");
 
-			for (auto& i : tokens_)
-				std::transform(i.begin(), i.end(), i.begin(), ::tolower);
+					std::istringstream iss{ ss };
+					vector<string>tokens_{};
+					tokens_.assign(std::istream_iterator<string>{iss}, std::istream_iterator<string>{});
+
+					for (auto& i : tokens_)
+						std::transform(i.begin(), i.end(), i.begin(), ::toupper);
+
+					return new data::TokenizerOutputData(tokens_);
+				}
+
+				TokenizerService::~TokenizerService()
+				{
+				}
+
+				abstraction::data::OutputData* TokenizerService::transform(std::shared_ptr<abstraction::data::InputData> d) {
+
+					auto data = dynamic_pointer_cast<data::TokenizerInputData>(d);
+					string str = data->getData();
+					char t = data->getToken();
+
+					return tokenize(str, t);
+				}
+
+			}
 		}
 	}
 }
@@ -288,7 +299,6 @@ namespace app
 				ModelProxy::ModelProxy() :/*AdamProxyImpl()*/ m_data{} {
 					registerEvent(ModelProxy::resultAvailable);
 					registerEvent(ModelProxy::adamError);
-					m_service = broker_system::white_page::BrokerHandler::getInstance().getService("html");
 				}
 			}
 		}
@@ -480,9 +490,30 @@ namespace app
 						void CustomerInteraction::run()
 						{
 							string line{ "0.1 0.9 2.7 30.5 20.9 25.7 3.5" };
-							service_system::tokenizer::Tokenizer tokenizer{ line };
-							for (auto&& t : tokenizer)
-								notify(InputEntered, std::make_shared<data::UserInterfaceIntputData>(data::UserInterfaceIntputData(t, "timer")));
+
+							auto service = broker_system::white_page::BrokerHandler::getInstance().getService("tokenizer");
+
+							// Build the data needed for the Service direct onto the Service
+							// itself.
+							// to be done in the next iterations.
+							// service.setData(...);
+
+
+							using namespace service_system::tokenizer;
+							using namespace service_system::tokenizer::logic::service;
+							using namespace service_system::tokenizer::data;
+							shared_ptr<TokenizerInputData>iData(new TokenizerInputData(line, ' '));
+
+							auto prt = service->transform(iData);
+
+							unique_ptr<TokenizerOutputData> result( dynamic_cast<TokenizerOutputData*>(prt));
+							
+							for (auto&& t : *result)
+								notify(InputEntered, 
+									make_shared<data::UserInterfaceIntputData>(
+										data::UserInterfaceIntputData(t, "timer")
+										)
+								);
 						}
 						void CustomerInteraction::sendInput()
 						{

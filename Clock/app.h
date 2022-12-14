@@ -592,44 +592,89 @@
 
 		namespace tokenizer
 		{
-			class Tokenizer : public abstraction::logic::service::Service
-			{
-				static const std::string name; // = "tokenizer";
-				using Token = std::string;
-				using Tokens = std::vector<std::string>;
-				using const_iterator = Tokens::const_iterator;
-
-			public:
-				explicit Tokenizer(const std::string&);
-				explicit Tokenizer(const std::string&, char);
-				explicit Tokenizer(std::istream& is) { tokenize(is); }
-				std::string getName() const noexcept override { return name; }
-				const std::string getServiceDescription() const override { return "tokenize the string"; }
-				const std::string getServiceLocalisation() const override { return "located somewhere"; }
-				abstraction::data::OutputData* transform(std::shared_ptr<abstraction::data::InputData> d) override
+			namespace data {
+				class TokenizerInputData : abstraction::data::InputData
 				{
-					return nullptr;
+				public:
+					TokenizerInputData(const std::string& str, char token)
+						: m_sData{ str }, m_cToken{ token }{}
+
+					~TokenizerInputData()
+					{
+					}
+					const std::string& getData()const { return m_sData; }
+					char getToken()const { return m_cToken; }
+
+				private:
+					std::string m_sData;
+					char m_cToken;
 				};
 
-				~Tokenizer();
 
-			public:
-				const_iterator begin() const { return tokens_.cbegin(); }
-				const_iterator end() const { return tokens_.cend(); }
-				const Token& operator[](size_t i) const { return tokens_[i]; }
-				size_t size() const { return tokens_.size(); }
+				class TokenizerOutputData : public abstraction::data::OutputData
+				{
+					using Token = std::string;
+					using Tokens = std::vector<std::string>;
+					using const_iterator = Tokens::const_iterator;
 
-			private:
-				void tokenize(std::istream&) noexcept;
-				Tokens tokens_;
+				public:
+					TokenizerOutputData(const std::vector<std::string> &strs)
+						:m_tokens{ strs } {}
 
-			private:
-				Tokenizer() = delete;
-				Tokenizer(const Tokenizer&) = delete;
-				Tokenizer(Tokenizer&&) = delete;
-				Tokenizer& operator=(const Tokenizer&) = delete;
-				Tokenizer& operator=(Tokenizer&&) = delete;
-			};
+					~TokenizerOutputData()
+					{
+					}
+					const_iterator begin() const { return m_tokens.cbegin(); }
+					const_iterator end() const { return m_tokens.cend(); }
+					const Token& operator[](size_t i) const { return m_tokens[i]; }
+					size_t size() const { return m_tokens.size(); }
+
+				private:
+					Tokens m_tokens;
+				};
+
+			}
+			namespace boundary
+			{
+				namespace proxy
+				{
+
+				} // namespace proxy
+			}
+
+			namespace logic
+			{
+				namespace business
+				{
+
+				} // namespace business
+
+				namespace service
+				{
+					class TokenizerService : public abstraction::logic::service::Service
+					{
+						static const std::string name; // = "tokenizer";
+					public:
+						TokenizerService();
+
+						std::string getName() const noexcept override { return name; }
+						const std::string getServiceDescription() const override { return "tokenize the string"; }
+						const std::string getServiceLocalisation() const override { return "located somewhere"; }
+						abstraction::data::OutputData* transform(std::shared_ptr<abstraction::data::InputData> d) override;
+						~TokenizerService();
+					private:
+						void tokenize(std::istream& is) noexcept;
+						data::TokenizerOutputData* tokenize(const string& s, char token)noexcept;
+
+					private:
+						TokenizerService(const TokenizerService&) = delete;
+						TokenizerService(TokenizerService&&) = delete;
+						TokenizerService& operator=(const TokenizerService&) = delete;
+						TokenizerService& operator=(TokenizerService&&) = delete;
+					};
+				}
+			}
+
 		}
 	}
 
@@ -655,6 +700,8 @@
 				BrokerForwarder() : m_services{}
 				{
 					m_services.insert(std::make_pair("html", std::make_unique<service_system::html::logic::service::HtmlService>()));
+					
+					m_services.insert(std::make_pair("tokenizer", std::make_unique<service_system::tokenizer::logic::service::TokenizerService>()));
 				}
 				std::unordered_map<std::string, std::unique_ptr<abstraction::logic::service::Service>> m_services;
 
@@ -679,6 +726,8 @@
 				BrokerHandler() : m_services{}
 				{
 					m_services.insert(std::make_pair("html", std::make_unique<service_system::html::logic::service::HtmlService>()));
+					
+					m_services.insert(std::make_pair("tokenizer", std::make_unique<service_system::tokenizer::logic::service::TokenizerService>()));
 				}
 				std::unordered_map<std::string, std::shared_ptr<abstraction::logic::service::Service>> m_services;
 
@@ -869,7 +918,6 @@
 
 					private:
 						data_abstraction::ModelProxyImpl m_data;
-						std::shared_ptr<abstraction::logic::service::Service> m_service;
 					};
 				}
 
