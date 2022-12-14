@@ -1,6 +1,8 @@
 #pragma once
 
 #include<Windows.h>
+#include<d2d1.h>
+#include<d2d1helper.h>
 #include <sstream>
 #include <unordered_map>
 #include <map>
@@ -57,6 +59,14 @@
 			public:
 				virtual ~OutputData() = default;
 			};
+
+			class Shape
+			{
+			public:
+				virtual~Shape() = default;
+
+			};
+
 
 			namespace command
 			{
@@ -782,13 +792,16 @@
 			class RotateCommand : public abstraction::data::command::Command
 			{
 			public:
-				explicit RotateCommand(size_t id,float angle)
-					: Command(), m_id{id},
+				RotateCommand(const std::string& hand, float angle)
+					: Command(), 
+					m_hand{ hand },
 					m_fAngle{ angle } {};
 
 				RotateCommand(const RotateCommand& dC)
 					:Command(dC),
+					m_hand{ dC.m_hand},
 					m_fAngle{ dC.m_fAngle } {}
+
 				~RotateCommand() = default;
 
 			protected:
@@ -801,8 +814,13 @@
 				virtual const char* getHelpMessageImpl()const noexcept override { return "Rotate the Hand"; };
 
 			private:
-				mutable float m_fAngle;
-				size_t m_id;
+				std::string m_hand;
+				float m_fAngle;
+
+			private:
+				RotateCommand(RotateCommand&&) = delete;
+				RotateCommand& operator=(const RotateCommand&) = delete;
+				RotateCommand& operator=(RotateCommand&&) = delete;
 			};
 		}
 
@@ -827,7 +845,7 @@
 				class ModelOutputData : public abstraction::data::OutputData
 				{
 				public:
-					ModelOutputData(const std::string& html): m_page(html) {}
+					ModelOutputData(const std::string& str): m_page(str) {}
 
 					~ModelOutputData() = default;
 
@@ -837,22 +855,67 @@
 					std::string m_page;
 				};
 
+				class Rectangle : public abstraction::data::Shape
+				{
+				public:
+					explicit Rectangle() = default;
+					explicit Rectangle(const Rectangle& other) {
+						m_rec.left = other.m_rec.left;
+						m_rec.top = other.m_rec.top;
+						m_rec.right = other.m_rec.right;
+						m_rec.bottom = other.m_rec.bottom;
+					}
+					Rectangle(float left, float top, float right, float bottom)
+					{
+						m_rec.left = left;
+						m_rec.top = top;
+						m_rec.right = right;
+						m_rec.bottom = bottom;
+					}
+
+					float getLeft()const { return m_rec.left; }
+					float getTop()const { return m_rec.top; }
+					float getRight()const { return m_rec.right; }
+					float getBottom()const { return m_rec.bottom; }
+
+					~Rectangle() = default;
+					std::ostream& Print(std::ostream& os) const
+					{
+						return os 
+							<< "(" << m_rec.left << "," << m_rec.top <<"," 
+							<< m_rec.right <<"," << m_rec.bottom << ")";
+					}
+
+				private:
+					D2D1_RECT_F m_rec;
+				};
+				//bool operator==(const Rectangle& lr, const Rectangle& hr)
+				//{
+				//	return lr.getLeft() == hr.getLeft()
+				//		&& lr.getTop() == hr.getTop()
+				//		&& lr.getRight() == hr.getRight()
+				//		&& lr.getBottom() == hr.getBottom();
+				//}
+				//std::ostream& operator<<(std::ostream& os, const Rectangle& c)
+				//{
+				//	return c.Print(os);
+				//}
+
+
 				class ModelProxyImpl
 				{
-					using Rectangle_ = std::string;
-					using Model = std::unordered_map<int, std::vector<std::shared_ptr<Rectangle_>>>;
+					using Model = std::map<std::string, Rectangle>;
 				public:
-					using const_dCase_iterator = Model::const_iterator;
-					using const_dCase_reference = Model::const_reference;
+					using const_iterator = Model::const_iterator;
+					using const_reference = Model::const_reference;
 
 				public:
 					~ModelProxyImpl() = default;
 					ModelProxyImpl();
 
 				public:
-					const_dCase_iterator cbegin()const { return m_data.cbegin(); }
-					const_dCase_iterator cend()const { return m_data.cend(); }
-					void refresh()noexcept;
+					const_iterator cbegin()const { return m_data.cbegin(); }
+					const_iterator cend()const { return m_data.cend(); }
 
 				private:
 					void initialize()noexcept;
@@ -910,7 +973,7 @@
 					public:
 						static ModelProxy& getInstance();
 
-						void rotate(size_t id, float angle, bool notify)noexcept;
+						void rotate(const std::string& hand, float angle, bool notify)noexcept;
 					private:
 						ModelProxy();
 

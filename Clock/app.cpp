@@ -241,7 +241,8 @@ namespace app
 	{
 		void RotateCommand::executeImpl()noexcept
 		{
-			/*string html = */ app::server_subsystem::boundary::proxy::ModelProxy::getInstance().rotate(m_id, m_fAngle, true);
+			using namespace app::server_subsystem::boundary::proxy;
+			ModelProxy::getInstance().rotate(m_hand, m_fAngle, true);
 		}
 		void RotateCommand::undoImpl()noexcept
 		{
@@ -258,13 +259,11 @@ namespace app
 				initialize();
 			}
 
-			void ModelProxyImpl::refresh()noexcept {
-
-			}
-
 			void ModelProxyImpl::initialize()noexcept
 			{
-
+				m_data["hoursHand"] = Rectangle(10.0f, 10.0f, 20.0f,20.0f);
+				m_data["minutesHand"] = Rectangle(10.0f, 10.0f, 40.0f,20.0f);
+				m_data["secondsHand"] = Rectangle(10.0f, 10.0f, 60.0f,20.0f);
 			}
 		}
 
@@ -281,7 +280,8 @@ namespace app
 
 					return;
 				}
-				void ModelProxy::rotate(size_t id, float angle, bool notify)noexcept {
+				void ModelProxy::rotate(const string& hand, float angle, bool notify)noexcept {
+					//auto rect = m_data.[hand];
 
 				}
 
@@ -483,7 +483,8 @@ namespace app
 					{
 						void CustomerInteraction::run()
 						{
-							string line{ "0.1 0.9 2.7 30.5 20.9 25.7 3.5" };
+							vector<string> ticks{ "0.1", "0.9 ","2.7 ","30.5 " };
+							//string line{ "0.1 0.9 2.7 30.5 20.9 25.7 3.5" };
 
 							auto service = broker_system::white_page::BrokerHandler::getInstance().getService("tokenizer");
 
@@ -493,16 +494,16 @@ namespace app
 							// service.setData(...);
 
 
-							using namespace service_system::tokenizer;
-							using namespace service_system::tokenizer::logic::service;
-							using namespace service_system::tokenizer::data;
-							shared_ptr<TokenizerInputData>iData(new TokenizerInputData(line, ' '));
+							//using namespace service_system::tokenizer;
+							//using namespace service_system::tokenizer::logic::service;
+							//using namespace service_system::tokenizer::data;
+							//shared_ptr<TokenizerInputData>iData(new TokenizerInputData(line, ' '));
 
-							auto prt = service->transform(iData);
+							//auto prt = service->transform(iData);
 
-							unique_ptr<TokenizerOutputData> result( dynamic_cast<TokenizerOutputData*>(prt));
+							//unique_ptr<TokenizerOutputData> result( dynamic_cast<TokenizerOutputData*>(prt));
 							
-							for (auto&& t : *result)
+							for (auto&& t : ticks)
 								notify(InputEntered, 
 									make_shared<data::UserInterfaceIntputData>(
 										data::UserInterfaceIntputData(t, "timer")
@@ -787,7 +788,7 @@ namespace app
 							clientCoordinator.redo();
 						}
 						else if (sender == "timer")
-							clientCoordinator.executeCommand(abstraction::data::command::make_unique_command_ptr(new data_abstraction::RotateCommand(1, stof(command))));
+							clientCoordinator.executeCommand(abstraction::data::command::make_unique_command_ptr(new data_abstraction::RotateCommand("hoursHand", stof(command))));
 						else
 						{
 							auto c = data::CommandRepository::getInstance().getCommandByName(sender);
