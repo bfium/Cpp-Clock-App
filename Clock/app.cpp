@@ -239,12 +239,12 @@ namespace app
 {
 	namespace data_abstraction
 	{
-		void RotateCommand::executeImpl()noexcept
+		void UpdateCommand::executeImpl()noexcept
 		{
 			using namespace app::server_subsystem::boundary::proxy;
-			ModelProxy::getInstance().rotate(m_hand, m_fAngle, true);
+			ModelProxy::getInstance().update(m_time, true);
 		}
-		void RotateCommand::undoImpl()noexcept
+		void UpdateCommand::undoImpl()noexcept
 		{
 
 		}
@@ -254,14 +254,6 @@ namespace app
 	{
 		namespace data_abstraction
 		{
-			void Rectangle::rotate(D2D_POINT_2F p, float angle)noexcept {
-				// dummy rotation
-				m_rec.left = 13.0f;
-				m_rec.top = 2.0f;
-				m_rec.right = 4.f;
-				m_rec.bottom = 10.3f;
-			}
-
 			ModelProxyImpl::ModelProxyImpl() : m_data{}
 			{
 				initialize();
@@ -288,22 +280,51 @@ namespace app
 
 					return;
 				}
-				void ModelProxy::rotate(const string& hand, float angle, bool notif)noexcept {
+				void ModelProxy::update(const string& time, bool notif)noexcept {
+					std::istringstream iss{ time };
+					vector<string>tokens_{};
+					tokens_.assign(
+						std::istream_iterator<string>{iss},
+							std::istream_iterator<string>{});
+
 					// get the need Hand Rectangle and rotate it.
-					auto ptr = find_if(m_data.cbegin(), m_data.cend(), [&](const auto& d) {
-						return d.first == hand; });
+					auto h_ptr = find_if(m_data.cbegin(), m_data.cend(), [&](const auto& d) {
+						return d.first == "hoursHand"; });
 
-					if (ptr != m_data.cend()) {
+					if (h_ptr != m_data.cend()) {
 
-						auto r = ptr->second;
-
-						D2D1_POINT_2F center = D2D1::Point2F(0.0f, 0.0f);
-
-						r.rotate(center, angle);
+						auto r = h_ptr->second;
+						const float fHourAngle = (360.0f / 12) * (stof(tokens_.at(0)));
 
 						if (notif)
 							notify(resultAvailable,
-								make_shared<data_abstraction::ModelOutputData>(r));
+								make_shared<data_abstraction::ModelOutputData>(r, fHourAngle));
+					}
+
+					auto m_ptr = find_if(m_data.cbegin(), m_data.cend(), [&](const auto& d) {
+						return d.first == "minutesHand"; });
+
+					if (m_ptr != m_data.cend()) {
+
+						auto r = m_ptr->second;
+						const float fminutesAngle = (360.0f / 60) * (stof(tokens_.at(1)));
+
+						if (notif)
+							notify(resultAvailable,
+								make_shared<data_abstraction::ModelOutputData>(r, fminutesAngle));
+					}
+
+					auto s_ptr = find_if(m_data.cbegin(), m_data.cend(), [&](const auto& d) {
+						return d.first == "secondsHand"; });
+
+					if (s_ptr != m_data.cend()) {
+
+						auto r = s_ptr->second;
+						const float fsecondsAngle = (360.0f / 60) * (stof(tokens_.at(2)));
+
+						if (notif)
+							notify(resultAvailable,
+								make_shared<data_abstraction::ModelOutputData>(r, fsecondsAngle));
 					}
 				}
 
@@ -510,30 +531,15 @@ namespace app
 					{
 						void CustomerInteraction::run()
 						{
-							vector<string> ticks{ "0.1", "0.9 ","2.7 ","30.5 " };
-							//string line{ "0.1 0.9 2.7 30.5 20.9 25.7 3.5" };
+							// 1. Timer issue an inpuls
+							// 2. Get The SYSTEMTIME
+							// 3. Sends a notification with ( hours, minutes and seconds)
 
-							auto service = broker_system::white_page::BrokerHandler::getInstance().getService("tokenizer");
+							string time{ "10 30 15" };
 
-							// Build the data needed for the Service direct onto the Service
-							// itself.
-							// to be done in the next iterations.
-							// service.setData(...);
-
-
-							//using namespace service_system::tokenizer;
-							//using namespace service_system::tokenizer::logic::service;
-							//using namespace service_system::tokenizer::data;
-							//shared_ptr<TokenizerInputData>iData(new TokenizerInputData(line, ' '));
-
-							//auto prt = service->transform(iData);
-
-							//unique_ptr<TokenizerOutputData> result( dynamic_cast<TokenizerOutputData*>(prt));
-							
-							for (auto&& t : ticks)
-								notify(InputEntered, 
+							notify(InputEntered, 
 									make_shared<data::UserInterfaceIntputData>(
-										data::UserInterfaceIntputData(t, "timer")
+										data::UserInterfaceIntputData(time, "timer")
 										)
 								);
 						}
@@ -551,15 +557,60 @@ namespace app
 							if (ptr)
 							{
 								auto rect = ptr->getRectangle();
-								 rect.Print(m_os) << endl;
+								 rect.Print(m_os)  <<" new angle: "<< ptr->getAngle() << endl;
 							}
 						}
 					}
 
 					namespace gui {
 
-						void Win::layout()
-						{
+						HRESULT Win::init() {
+							HRESULT hr = S_OK;
+
+							return hr;
+						}
+						void Win::run() {
+
+						}
+						Win::Win() :
+							m_hwnd(NULL),
+							m_pDirect2dFactory(NULL),
+							m_pRenderTarget(NULL),
+							m_pLightSlateGrayBrush(NULL),
+							m_pCornflowerBlueBrush(NULL) {
+
+						}
+						Win::~Win() {
+							SafeRelease(&m_pDirect2dFactory);
+							SafeRelease(&m_pRenderTarget);
+							SafeRelease(&m_pLightSlateGrayBrush);
+							SafeRelease(&m_pCornflowerBlueBrush);
+
+						}
+
+						LRESULT CALLBACK Win::WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+							return 0;
+						}
+						HRESULT Win::createDeviceIndependentResource() {
+							HRESULT hr = S_OK;
+
+							return hr;
+						}
+						HRESULT Win::createDeviceDependentResource() {
+							HRESULT hr = S_OK;
+
+							return hr;
+						}
+						void Win::discardDeviceResources() {
+
+						}
+						HRESULT Win::OnRender() {
+							HRESULT hr = S_OK;
+
+							return hr;
+						}
+						void Win::OnResize(UINT width, UINT height) {
 
 						}
 
@@ -820,8 +871,13 @@ namespace app
 						{
 							clientCoordinator.redo();
 						}
-						else if (sender == "timer")
-							clientCoordinator.executeCommand(abstraction::data::command::make_unique_command_ptr(new data_abstraction::RotateCommand("hoursHand", stof(command))));
+						else if (sender == "timer") {
+							clientCoordinator.executeCommand(
+								abstraction::data::command::make_unique_command_ptr(
+									new data_abstraction::UpdateCommand(command)
+								)
+							);							
+						}
 						else
 						{
 							auto c = data::CommandRepository::getInstance().getCommandByName(sender);
@@ -857,10 +913,18 @@ namespace app
 
 				namespace timer
 				{
-					// RAS
+					void CALLBACK ClockTimer::TimerProc(HWND hWnd, UINT uTimerMsg, UINT uTimerID, DWORD dwTime) {
+						SYSTEMTIME time;
+						GetLocalTime(&time);
+
+						string time_ = string{ 
+							to_string(time.wHour) + " " + 
+							to_string(time.wMinute) + " " + 
+							to_string(time.wSecond) 
+						};
+					}
 				}
 			}
-
 		} // namespace controller
 	}
 

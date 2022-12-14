@@ -230,6 +230,32 @@
 
 			}
 		}
+
+		namespace control
+		{
+			namespace coordinator
+			{
+			} // namespace coordinator
+
+			namespace state_dependent_control
+			{
+
+			} // namespace state_dependent_control
+
+			namespace timer
+			{
+				class Timer
+				{
+				public:
+					virtual~Timer() = default;
+
+				};
+
+			}
+		} // namespace control
+
+
+
 	} // namespace abstraction
 
 	namespace service_system
@@ -787,40 +813,39 @@
 
 	namespace app
 	{
+#define CLOCK_TIMER_ID 1
+
 		namespace data_abstraction
 		{
-			class RotateCommand : public abstraction::data::command::Command
+			class UpdateCommand : public abstraction::data::command::Command
 			{
 			public:
-				RotateCommand(const std::string& hand, float angle)
+				UpdateCommand(const std::string& t)
 					: Command(), 
-					m_hand{ hand },
-					m_fAngle{ angle } {};
+					m_time{ t } {};
 
-				RotateCommand(const RotateCommand& dC)
+				UpdateCommand(const UpdateCommand& dC)
 					:Command(dC),
-					m_hand{ dC.m_hand},
-					m_fAngle{ dC.m_fAngle } {}
+					m_time{ dC.m_time } {}
 
-				~RotateCommand() = default;
+				~UpdateCommand() = default;
 
 			protected:
 				virtual void undoImpl()noexcept override;
 				virtual void executeImpl()noexcept override;
-				virtual RotateCommand* cloneImpl()const noexcept override { return new RotateCommand{ *this }; }
+				virtual UpdateCommand* cloneImpl()const noexcept override { return new UpdateCommand{ *this }; }
 
 				//virtual	void checkPostConditionImpl()const override {};
 				//virtual	void checkPreConditionImpl()const override {};
 				virtual const char* getHelpMessageImpl()const noexcept override { return "Rotate the Hand"; };
 
 			private:
-				std::string m_hand;
-				float m_fAngle;
+				std::string m_time;
 
 			private:
-				RotateCommand(RotateCommand&&) = delete;
-				RotateCommand& operator=(const RotateCommand&) = delete;
-				RotateCommand& operator=(RotateCommand&&) = delete;
+				UpdateCommand(UpdateCommand&&) = delete;
+				UpdateCommand& operator=(const UpdateCommand&) = delete;
+				UpdateCommand& operator=(UpdateCommand&&) = delete;
 			};
 		}
 
@@ -871,8 +896,6 @@
 					void setRight(float r) {  m_rec.right=r; }
 					void setBottom(float b) {  m_rec.bottom=b; }
 
-					void rotate(D2D_POINT_2F p, float angle)noexcept;
-
 					~Rectangle() = default;
 					std::ostream& Print(std::ostream& os) const
 					{
@@ -895,14 +918,16 @@
 				class ModelOutputData : public abstraction::data::OutputData
 				{
 				public:
-					ModelOutputData(const Rectangle& r) : m_rect(r) {}
+					ModelOutputData(const Rectangle& r, float angle) : m_rect(r), m_fAngle{angle}{}
 
 					~ModelOutputData() = default;
 
 					const Rectangle& getRectangle()const { return m_rect; }
+					float getAngle()const { return m_fAngle; }
 
 				private:
 					Rectangle m_rect;
+					float m_fAngle;
 				};
 
 
@@ -977,7 +1002,7 @@
 					public:
 						static ModelProxy& getInstance();
 
-						void rotate(const std::string& hand, float angle, bool notify)noexcept;
+						void update(const std::string& time, bool notify)noexcept;
 					private:
 						ModelProxy();
 
@@ -1096,6 +1121,7 @@
 						};
 					}
 				}
+				
 			}
 
 			namespace controller
@@ -1176,6 +1202,23 @@
 
 					namespace timer
 					{
+						class ClockTimer : public abstraction::control::timer::Timer
+						{
+						public:
+							ClockTimer(HWND hWnd, int id, UINT period) :m_hwnd{ hWnd }
+							{
+								SetTimer(hWnd, id, period,TimerProc);
+							}
+
+							~ClockTimer()
+							{
+							}
+
+						private:
+							static void CALLBACK TimerProc(HWND hWnd, UINT uTimerMsg, UINT uTimerID, DWORD dwTime);
+						private:
+							HWND m_hwnd;
+						};
 
 					}
 				} // namespace control
@@ -1238,6 +1281,7 @@
 						std::string sender_;
 					};
 
+
 				} // namespace data
 
 				namespace boundary
@@ -1282,21 +1326,36 @@
 								BUTTON_OPEN_FILTER,
 							};
 #define MAX_BYTE 256
-							typedef std::map<size_t, HWND> gid_map;
+							template <class Interface>
+							inline void SafeRelease(Interface** ppInterfaceToRelease) {
+								if (*ppInterfaceToRelease != nullptr) {
+									(*ppInterfaceToRelease)->Release();
+									(*ppInterfaceToRelease) = nullptr;
+								}
+							}
 
 							class Win
 							{
 							public:
-								HRESULT init();
+								Win();
+								~Win();
 
-							protected:
-								Win() {};
+								HRESULT init();
+								void run();
 							private:
 								static LRESULT CALLBACK	WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+								HRESULT createDeviceIndependentResource();
+								HRESULT createDeviceDependentResource();
+								void discardDeviceResources();
+								HRESULT OnRender();
+								void OnResize(UINT width, UINT height);
 
 							private:
-								void layout();
-								mutable HWND m_hwnd;
+								HWND m_hwnd;
+								ID2D1Factory* m_pDirect2dFactory;
+								ID2D1HwndRenderTarget* m_pRenderTarget;
+								ID2D1SolidColorBrush* m_pLightSlateGrayBrush;
+								ID2D1SolidColorBrush* m_pCornflowerBlueBrush;
 							};
 
 							class GraphicalUserInterface : public UserInterface, protected Win
