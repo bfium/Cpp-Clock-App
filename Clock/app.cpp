@@ -177,10 +177,17 @@ namespace service_system
 			{
 				const std::string TokenizerService::name = "tokenizer";
 
-				data::TokenizerOutputData* TokenizerService::tokenize(const string& s, char token)
-				noexcept {
-					string ss = s;
+				TokenizerService::~TokenizerService()
+				{
+				}
+
+				abstraction::data::OutputData* TokenizerService::transform(std::shared_ptr<abstraction::data::InputData> d) {
+
+					auto data = dynamic_pointer_cast<data::TokenizerInputData>(d);
+					string ss = data->getData();
+					char token = data->getToken();
 					size_t pos{};
+
 					while ((pos = ss.find(token)) != std::string::npos)
 						ss.replace(pos, 1, " ");
 
@@ -192,19 +199,6 @@ namespace service_system
 						std::transform(i.begin(), i.end(), i.begin(), ::toupper);
 
 					return new data::TokenizerOutputData(tokens_);
-				}
-
-				TokenizerService::~TokenizerService()
-				{
-				}
-
-				abstraction::data::OutputData* TokenizerService::transform(std::shared_ptr<abstraction::data::InputData> d) {
-
-					auto data = dynamic_pointer_cast<data::TokenizerInputData>(d);
-					string str = data->getData();
-					char t = data->getToken();
-
-					return tokenize(str, t);
 				}
 
 			}

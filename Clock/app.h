@@ -516,7 +516,7 @@
 						abstraction::data::OutputData* transform(std::shared_ptr<abstraction::data::InputData> d) override
 						{
 
-							business::HtmlManager manager;
+							//business::HtmlManager manager;
 							std::string da{ "the result" };
 
 							//auto r = manager.create(da);
@@ -655,16 +655,14 @@
 					{
 						static const std::string name; // = "tokenizer";
 					public:
-						TokenizerService();
+						TokenizerService()=default;
 
 						std::string getName() const noexcept override { return name; }
 						const std::string getServiceDescription() const override { return "tokenize the string"; }
 						const std::string getServiceLocalisation() const override { return "located somewhere"; }
+
 						abstraction::data::OutputData* transform(std::shared_ptr<abstraction::data::InputData> d) override;
 						~TokenizerService();
-					private:
-						void tokenize(std::istream& is) noexcept;
-						data::TokenizerOutputData* tokenize(const string& s, char token)noexcept;
 
 					private:
 						TokenizerService(const TokenizerService&) = delete;
