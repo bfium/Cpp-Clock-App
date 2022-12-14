@@ -254,6 +254,14 @@ namespace app
 	{
 		namespace data_abstraction
 		{
+			void Rectangle::rotate(D2D_POINT_2F p, float angle)noexcept {
+				// dummy rotation
+				m_rec.left = 13.0f;
+				m_rec.top = 2.0f;
+				m_rec.right = 4.f;
+				m_rec.bottom = 10.3f;
+			}
+
 			ModelProxyImpl::ModelProxyImpl() : m_data{}
 			{
 				initialize();
@@ -280,9 +288,23 @@ namespace app
 
 					return;
 				}
-				void ModelProxy::rotate(const string& hand, float angle, bool notify)noexcept {
-					//auto rect = m_data.[hand];
+				void ModelProxy::rotate(const string& hand, float angle, bool notif)noexcept {
+					// get the need Hand Rectangle and rotate it.
+					auto ptr = find_if(m_data.cbegin(), m_data.cend(), [&](const auto& d) {
+						return d.first == hand; });
 
+					if (ptr != m_data.cend()) {
+
+						auto r = ptr->second;
+
+						D2D1_POINT_2F center = D2D1::Point2F(0.0f, 0.0f);
+
+						r.rotate(center, angle);
+
+						if (notif)
+							notify(resultAvailable,
+								make_shared<data_abstraction::ModelOutputData>(r));
+					}
 				}
 
 				ModelProxy& ModelProxy::getInstance()
@@ -293,6 +315,11 @@ namespace app
 				ModelProxy::ModelProxy() :/*AdamProxyImpl()*/ m_data{} {
 					registerEvent(ModelProxy::resultAvailable);
 					registerEvent(ModelProxy::adamError);
+
+					m_data["hoursHand"] = data_abstraction::Rectangle(10.0f, 10.0f, 20.0f, 20.0f);
+					m_data["minutesHand"] = data_abstraction::Rectangle(10.0f, 10.0f, 40.0f, 20.0f);
+					m_data["secondsHand"] = data_abstraction::Rectangle(10.0f, 10.0f, 60.0f, 20.0f);
+
 				}
 			}
 		}
@@ -519,7 +546,13 @@ namespace app
 							m_os << msg << endl;
 						}
 						void CustomerInteraction::sendOutput(shared_ptr<abstraction::data::Data>d) {
-							// Todo
+							auto ptr = dynamic_pointer_cast<server_subsystem::data_abstraction::ModelOutputData>(d);
+
+							if (ptr)
+							{
+								auto rect = ptr->getRectangle();
+								 rect.Print(m_os) << endl;
+							}
 						}
 					}
 

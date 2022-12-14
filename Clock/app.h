@@ -842,24 +842,12 @@
 					EMPTY,
 					TOO_FEW_ARGUMENT
 				};
-				class ModelOutputData : public abstraction::data::OutputData
-				{
-				public:
-					ModelOutputData(const std::string& str): m_page(str) {}
-
-					~ModelOutputData() = default;
-
-					const std::string& getPage()const { return m_page; }
-
-				private:
-					std::string m_page;
-				};
 
 				class Rectangle : public abstraction::data::Shape
 				{
 				public:
 					explicit Rectangle() = default;
-					explicit Rectangle(const Rectangle& other) {
+					Rectangle(const Rectangle& other) {
 						m_rec.left = other.m_rec.left;
 						m_rec.top = other.m_rec.top;
 						m_rec.right = other.m_rec.right;
@@ -877,6 +865,13 @@
 					float getTop()const { return m_rec.top; }
 					float getRight()const { return m_rec.right; }
 					float getBottom()const { return m_rec.bottom; }
+
+					void setLeft(float l) {  m_rec.left=l; }
+					void setTop(float t) {  m_rec.top=t; }
+					void setRight(float r) {  m_rec.right=r; }
+					void setBottom(float b) {  m_rec.bottom=b; }
+
+					void rotate(D2D_POINT_2F p, float angle)noexcept;
 
 					~Rectangle() = default;
 					std::ostream& Print(std::ostream& os) const
@@ -896,10 +891,19 @@
 				//		&& lr.getRight() == hr.getRight()
 				//		&& lr.getBottom() == hr.getBottom();
 				//}
-				//std::ostream& operator<<(std::ostream& os, const Rectangle& c)
-				//{
-				//	return c.Print(os);
-				//}
+
+				class ModelOutputData : public abstraction::data::OutputData
+				{
+				public:
+					ModelOutputData(const Rectangle& r) : m_rect(r) {}
+
+					~ModelOutputData() = default;
+
+					const Rectangle& getRectangle()const { return m_rect; }
+
+				private:
+					Rectangle m_rect;
+				};
 
 
 				class ModelProxyImpl
@@ -978,7 +982,9 @@
 						ModelProxy();
 
 					private:
-						data_abstraction::ModelProxyImpl m_data;
+						//data_abstraction::ModelProxyImpl m_data;
+						using Model = std::map<std::string, data_abstraction::Rectangle>;
+						Model m_data;
 					};
 				}
 
