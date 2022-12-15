@@ -1396,7 +1396,7 @@
 								void OnResize(UINT width, UINT height);
 
 							private:
-								HWND m_hwnd;
+								static HWND m_hwnd;
 							};
 						}
 					}	  // namespace user_interaction

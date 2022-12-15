@@ -597,6 +597,8 @@ namespace app
 
 					namespace gui {
 
+						HWND Win::m_hwnd = NULL;
+
 						HRESULT Win::init() {
 							HRESULT hr = createDeviceIndependentResource();
 
@@ -671,7 +673,7 @@ namespace app
 								DispatchMessage(&msg);
 							}
 						}
-						Win::Win() : m_hwnd(NULL){
+						Win::Win()/* : m_hwnd(NULL)*/{
 
 						}
 						Win::~Win() {
@@ -690,7 +692,7 @@ namespace app
 						LRESULT CALLBACK Win::WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
 							LRESULT lr = 0;
-							if (uMsg == WM_CREATE)
+							if (uMsg == WM_NCCREATE)
 							{
 								LPCREATESTRUCT pcs = (LPCREATESTRUCT)lParam;
 								Win* pApp = (Win*)pcs->lpCreateParams;
@@ -701,6 +703,7 @@ namespace app
 									reinterpret_cast<LONG_PTR>(pApp)
 								);
 
+								m_hwnd = hWnd;
 								lr = 1;
 							}
 							else
