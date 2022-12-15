@@ -253,9 +253,6 @@
 
 			}
 		} // namespace control
-
-
-
 	} // namespace abstraction
 
 	namespace service_system
@@ -871,7 +868,13 @@
 				class Rectangle : public abstraction::data::Shape
 				{
 				public:
-					explicit Rectangle() = default;
+					Rectangle() {
+						m_rec.left = 0.0f;
+						m_rec.top = 0.0f;
+						m_rec.right = 0.0f;
+						m_rec.bottom = 0.0f;
+					};
+
 					Rectangle(const Rectangle& other) {
 						m_rec.left = other.m_rec.left;
 						m_rec.top = other.m_rec.top;
@@ -1263,7 +1266,7 @@
 					static INT defaultAppHeight = 400;
 					static INT defaultAppPosX = 100;
 					static INT defaultAppPosY = 100;
-					HINSTANCE hInst;
+					//HINSTANCE hInst;
 
 					class UserInterfaceIntputData : public abstraction::data::InputData
 					{
@@ -1371,7 +1374,7 @@
 								Inherite privately from the dataAquisition class
 								to gain access to the protected data...
 							*/
-							class Win : private data::WinImpl
+							class Win : private data::WinImpl, public UserInterface
 							{
 							public:
 								Win();
@@ -1379,6 +1382,11 @@
 
 								HRESULT init();
 								void run();
+
+								void sendInput() override;
+								void sendOutput(const char* msg) override;
+								void sendOutput(std::shared_ptr<abstraction::data::Data>d)override;
+
 							private:
 								static LRESULT CALLBACK	WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 								HRESULT OnRender();
@@ -1386,26 +1394,6 @@
 
 							private:
 								HWND m_hwnd;
-							};
-
-							class GraphicalUserInterface : public UserInterface, protected Win
-							{
-							public:
-								static GraphicalUserInterface& getInstance()
-								{
-									static GraphicalUserInterface instance;
-									return instance;
-								}
-								void show(int cmdShow);
-							private:
-								GraphicalUserInterface();
-								void sendOutput(std::shared_ptr<abstraction::data::Data>d)override;
-
-							private:
-								void sendInput() override;
-								void sendOutput(const char* msg) override;
-							private:
-								//user_interaction::gui::Win m_main_window;
 							};
 						}
 					}	  // namespace user_interaction
@@ -1434,12 +1422,14 @@
 		class Facade
 		{
 		public:
-			Facade() {};
+			Facade(/*HINSTANCE h*/)/* :m_hinstance{h}*/{};
 			static const char* getFacadeDescription() { return "the Facade of my system"; }
 			void run();
 
 		protected:
 			virtual void start() {};
+		private :
+			//HINSTANCE m_hinstance;
 		};
 	}
 

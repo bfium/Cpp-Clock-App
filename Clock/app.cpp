@@ -4,7 +4,6 @@
 #include<iostream>
 #include<regex>
 
-#define ADAM_CharBufferSize 256
 using namespace std;
 
 namespace service_system
@@ -602,17 +601,15 @@ namespace app
 							HRESULT hr = createDeviceIndependentResource();
 
 							if (SUCCEEDED(hr)) {
-								data::hInst = GetModuleHandle(NULL);
-
-								if (data::hInst)
+								//if (/*data::hInst*/)
 								{
 									WNDCLASSEX wcx = {sizeof(WNDCLASSEX)};
-									wcx.hInstance = data::hInst;
+									wcx.hInstance = GetModuleHandle(NULL);
 									wcx.lpfnWndProc = Win::WinProc;
 									wcx.lpszClassName = data::lpszClassName;
 									wcx.style = CS_HREDRAW | CS_VREDRAW;
 									wcx.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-									wcx.hIcon = LoadIcon(data::hInst, data::lpszAppName);
+									wcx.hIcon = LoadIcon(GetModuleHandle(NULL), data::lpszAppName);
 									wcx.hCursor = LoadCursor(NULL, IDC_ARROW);
 									wcx.cbClsExtra = sizeof(LONG_PTR);
 									wcx.cbSize = sizeof(WNDCLASSEX);
@@ -630,15 +627,15 @@ namespace app
 										data::defaultAppHeight,
 										NULL,
 										data::lpszMenuName,
-										data::hInst,
+										GetModuleHandle(NULL),
 										this
 									);
 
 									if (m_hwnd)
 									{
-										float dpi = GetDpiForWindow(m_hwnd);
-										int newWidth = (dpi * data::defaultAppWidth) / 96.0f;
-										int newHeight = (dpi * data::defaultAppHeight) / 96.0f;
+										int dpi = GetDpiForWindow(m_hwnd);
+										int newWidth = static_cast<int>( (dpi * data::defaultAppWidth) / 96.0f);
+										int newHeight = static_cast<int>((dpi * data::defaultAppHeight) / 96.0f);
 
 										SetWindowPos(
 											m_hwnd,
@@ -657,11 +654,11 @@ namespace app
 										return S_FALSE;
 									}
 								}
-								else
-								{
-									auto err = GetLastError();
-									cout << "Last Error :" << err << endl;
-								}
+								//else
+								//{
+								//	auto err = GetLastError();
+								//	cout << "Last Error :" << err << endl;
+								//}
 							}
 
 							return hr;
@@ -678,6 +675,15 @@ namespace app
 
 						}
 						Win::~Win() {
+
+						}
+						void Win::sendInput() {
+
+						}
+						void Win::sendOutput(const char* msg) {
+
+						}
+						void Win::sendOutput(std::shared_ptr<abstraction::data::Data>d) {
 
 						}
 
@@ -749,29 +755,6 @@ namespace app
 							return hr;
 						}
 						void Win::OnResize(UINT width, UINT height) {
-
-						}
-
-						void GraphicalUserInterface::sendInput()
-						{
-							// to do if MVC architecture
-							// get model data and update the View...
-						}
-						void GraphicalUserInterface::sendOutput(const char* s)
-						{
-							// dispatche the Data the GUI Elments
-						}
-
-						void GraphicalUserInterface::sendOutput(shared_ptr<abstraction::data::Data>d) {
-							// dispatche the Data the GUI Elments
-						}
-
-						GraphicalUserInterface::GraphicalUserInterface()
-						{
-
-						}
-
-						void GraphicalUserInterface::show(int cmdShow) {
 
 						}
 					}
@@ -1068,10 +1051,13 @@ namespace app
 
 	void Facade::run()
 	{
-		using namespace client_subsystem::view::boundary;
+		{
+			/*
+					using namespace client_subsystem::view::boundary;
 		user_interaction::cli::CustomerInteraction ci(std::cin, std::cout);
 
-		proxy::UserInterfaceObserver ui_observer(client_subsystem::controller::control::state_dependent_control::CommandDispatcher::getInstance(ci));
+		proxy::UserInterfaceObserver ui_observer(
+		client_subsystem::controller::control::state_dependent_control::CommandDispatcher::getInstance(ci));
 
 		ci.subscribe(user_interaction::gui::GraphicalUserInterface::InputEntered, std::make_unique<proxy::UserInterfaceObserver>(ui_observer));
 
@@ -1081,11 +1067,48 @@ namespace app
 
 		ci.run();
 
-		//proxy::UserInterfaceObserver ui_observer(client_subsystem::controller::control::state_dependent_control::CommandDispatcher::getInstance(user_interaction::gui::GraphicalUserInterface::getInstance()));
-		//user_interaction::gui::GraphicalUserInterface::getInstance().subscribe(user_interaction::gui::GraphicalUserInterface::InputEntered, std::make_unique<proxy::UserInterfaceObserver>(ui_observer));
+			*/
+		}
 
-		//using namespace server_subsystem::boundary::proxy;
-		//ModelObserver model_observer(user_interaction::gui::GraphicalUserInterface::getInstance());
-		//ModelProxy::getInstance().subscribe(ModelProxy::resultAvailable, std::make_unique<ModelObserver>(model_observer));
+		if (SUCCEEDED(CoInitialize(NULL))){
+			
+			{
+				using namespace client_subsystem;
+				using namespace client_subsystem::view;
+				using namespace client_subsystem::view::data;
+				using namespace client_subsystem::view::boundary;
+				using namespace client_subsystem::view::boundary::proxy;
+				using namespace client_subsystem::view::boundary::user_interaction;
+				using namespace client_subsystem::view::boundary::user_interaction::gui;
+				using namespace client_subsystem::controller;
+				using namespace client_subsystem::controller::control;
+				using namespace client_subsystem::controller::control::state_dependent_control;
+
+				//hInst = m_hinstance;
+
+				Win win;
+				UserInterfaceObserver ui_observer(CommandDispatcher::getInstance(win));
+				win.subscribe(
+					UserInterface::InputEntered,
+						std::make_unique<UserInterfaceObserver>(ui_observer)
+				);
+
+				using namespace server_subsystem;
+				using namespace server_subsystem::boundary;
+				using namespace server_subsystem::boundary::proxy;
+
+				ModelObserver model_observer(win);
+				ModelProxy::getInstance().subscribe(
+					ModelProxy::resultAvailable, 
+					std::make_unique<ModelObserver>(model_observer)
+				);
+
+				if (SUCCEEDED(win.init())) {
+					win.run();
+				}
+			}
+
+			CoUninitialize();
+		}
 	}
 }
