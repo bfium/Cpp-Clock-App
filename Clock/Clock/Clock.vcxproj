@@ -140,16 +140,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\app.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\app.cpp" />
     <ClCompile Include="..\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="appIcon.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="..\DPIaware.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
