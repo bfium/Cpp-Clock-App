@@ -520,6 +520,40 @@ namespace app
 	{
 		namespace view
 		{
+			namespace data {
+				WinImpl::WinImpl() :
+					m_pDirect2dFactory(NULL),
+					m_pRenderTarget(NULL),
+					m_pLightSlateGrayBrush(NULL),
+					m_pCornflowerBlueBrush(NULL) {
+
+				}
+				WinImpl::~WinImpl() {
+					using namespace logic::algorithm;
+					SafeRelease(&m_pDirect2dFactory);
+					SafeRelease(&m_pRenderTarget);
+					SafeRelease(&m_pLightSlateGrayBrush);
+					SafeRelease(&m_pCornflowerBlueBrush);
+				}
+
+				HRESULT WinImpl::createDeviceIndependentResource() {
+					HRESULT hr = S_OK;
+
+					return hr;
+				}
+				HRESULT WinImpl::createDeviceDependentResource() {
+					HRESULT hr = S_OK;
+
+					return hr;
+				}
+				void WinImpl::discardDeviceResources() {
+					using namespace logic::algorithm;
+					SafeRelease(&m_pDirect2dFactory);
+					SafeRelease(&m_pRenderTarget);
+					SafeRelease(&m_pLightSlateGrayBrush);
+					SafeRelease(&m_pCornflowerBlueBrush);
+				}
+			}
 			namespace boundary
 			{
 				// View
@@ -565,45 +599,149 @@ namespace app
 					namespace gui {
 
 						HRESULT Win::init() {
-							HRESULT hr = S_OK;
+							HRESULT hr = createDeviceIndependentResource();
+
+							if (SUCCEEDED(hr)) {
+								data::hInst = GetModuleHandle(NULL);
+
+								if (data::hInst)
+								{
+									WNDCLASSEX wcx = {sizeof(WNDCLASSEX)};
+									wcx.hInstance = data::hInst;
+									wcx.lpfnWndProc = Win::WinProc;
+									wcx.lpszClassName = data::lpszClassName;
+									wcx.style = CS_HREDRAW | CS_VREDRAW;
+									wcx.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+									wcx.hIcon = LoadIcon(data::hInst, data::lpszAppName);
+									wcx.hCursor = LoadCursor(NULL, IDC_ARROW);
+									wcx.cbClsExtra = sizeof(LONG_PTR);
+									wcx.cbSize = sizeof(WNDCLASSEX);
+
+									if (!RegisterClassEx(&wcx))
+										return S_FALSE;
+
+									m_hwnd = CreateWindowEx(
+										0,
+										data::lpszClassName,
+										data::lpszAppName,
+										WS_OVERLAPPEDWINDOW,
+										10, 10,
+										data::defaultAppWidth,
+										data::defaultAppHeight,
+										NULL,
+										data::lpszMenuName,
+										data::hInst,
+										this
+									);
+
+									if (m_hwnd)
+									{
+										float dpi = GetDpiForWindow(m_hwnd);
+										int newWidth = (dpi * data::defaultAppWidth) / 96.0f;
+										int newHeight = (dpi * data::defaultAppHeight) / 96.0f;
+
+										SetWindowPos(
+											m_hwnd,
+											NULL,
+											NULL,
+											NULL,
+											newWidth,
+											newHeight,
+											SWP_SHOWWINDOW | SWP_NOMOVE
+										);
+
+										UpdateWindow(m_hwnd);
+									}
+									else
+									{
+										return S_FALSE;
+									}
+								}
+								else
+								{
+									auto err = GetLastError();
+									cout << "Last Error :" << err << endl;
+								}
+							}
 
 							return hr;
 						}
 						void Win::run() {
-
+							MSG msg{};
+							while (GetMessage(&msg,NULL,0,0)>0)
+							{
+								TranslateMessage(&msg);
+								DispatchMessage(&msg);
+							}
 						}
-						Win::Win() :
-							m_hwnd(NULL),
-							m_pDirect2dFactory(NULL),
-							m_pRenderTarget(NULL),
-							m_pLightSlateGrayBrush(NULL),
-							m_pCornflowerBlueBrush(NULL) {
+						Win::Win() : m_hwnd(NULL){
 
 						}
 						Win::~Win() {
-							SafeRelease(&m_pDirect2dFactory);
-							SafeRelease(&m_pRenderTarget);
-							SafeRelease(&m_pLightSlateGrayBrush);
-							SafeRelease(&m_pCornflowerBlueBrush);
 
 						}
 
 						LRESULT CALLBACK Win::WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
+							LRESULT lr = 0;
+							if (uMsg == WM_CREATE)
+							{
+								LPCREATESTRUCT pcs = (LPCREATESTRUCT)lParam;
+								Win* pApp = (Win*)pcs->lpCreateParams;
+
+								::SetWindowLongPtrW(
+									hWnd,
+									GWLP_USERDATA,
+									reinterpret_cast<LONG_PTR>(pApp)
+								);
+
+								lr = 1;
+							}
+							else
+							{
+								Win* pApp = reinterpret_cast<Win*>(static_cast<LONG_PTR>(
+									::GetWindowLongPtrW(
+										hWnd,
+										GWLP_USERDATA
+									)));
+								if (pApp)
+								{
+									switch (uMsg)
+									{
+									case WM_SIZE:
+									{
+										UINT width = LOWORD(lParam);
+										UINT height = HIWORD(lParam);
+										pApp->OnResize(width, height);
+									}
+									lr = 0;
+									break;
+									case WM_DISPLAYCHANGE:
+									{
+										InvalidateRect(hWnd, NULL, FALSE);
+									}
+									lr = 0;
+									break;
+									case WM_PAINT:
+									{
+										pApp->OnRender();
+										ValidateRect(hWnd, NULL);
+									}
+									lr = 0;
+									break;
+									case WM_DESTROY:
+									{
+										PostQuitMessage(0);
+									}
+									lr = 1;
+									break;
+
+									default:
+										return DefWindowProc(hWnd, uMsg, wParam, lParam);
+									}
+								}
+							}
 							return 0;
-						}
-						HRESULT Win::createDeviceIndependentResource() {
-							HRESULT hr = S_OK;
-
-							return hr;
-						}
-						HRESULT Win::createDeviceDependentResource() {
-							HRESULT hr = S_OK;
-
-							return hr;
-						}
-						void Win::discardDeviceResources() {
-
 						}
 						HRESULT Win::OnRender() {
 							HRESULT hr = S_OK;

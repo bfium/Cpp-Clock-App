@@ -1243,8 +1243,28 @@
 
 			namespace view
 			{
+				namespace logic {
+					namespace algorithm {
+						template <class Interface>
+						inline void SafeRelease(Interface** ppInterfaceToRelease) {
+							if (*ppInterfaceToRelease != nullptr) {
+								(*ppInterfaceToRelease)->Release();
+								(*ppInterfaceToRelease) = nullptr;
+							}
+						}
+					}
+				}
 				namespace data
 				{
+					static LPCWSTR lpszClassName = L"ClockClass";
+					static HMENU lpszMenuName = NULL;
+					static LPCWSTR lpszAppName = L"Sample App";
+					static INT defaultAppWidth = 400;
+					static INT defaultAppHeight = 400;
+					static INT defaultAppPosX = 100;
+					static INT defaultAppPosY = 100;
+					HINSTANCE hInst;
+
 					class UserInterfaceIntputData : public abstraction::data::InputData
 					{
 					public:
@@ -1279,6 +1299,26 @@
 					private:
 						std::string uii;
 						std::string sender_;
+					};
+
+					// for all the data needed in the Win class.
+					class WinImpl
+					{
+					public:
+						WinImpl();
+						~WinImpl();
+
+					protected:
+						HRESULT createDeviceIndependentResource();
+						HRESULT createDeviceDependentResource();
+						void discardDeviceResources();
+
+					private:
+						ID2D1Factory* m_pDirect2dFactory;
+						ID2D1HwndRenderTarget* m_pRenderTarget;
+						ID2D1SolidColorBrush* m_pLightSlateGrayBrush;
+						ID2D1SolidColorBrush* m_pCornflowerBlueBrush;
+
 					};
 
 
@@ -1326,15 +1366,12 @@
 								BUTTON_OPEN_FILTER,
 							};
 #define MAX_BYTE 256
-							template <class Interface>
-							inline void SafeRelease(Interface** ppInterfaceToRelease) {
-								if (*ppInterfaceToRelease != nullptr) {
-									(*ppInterfaceToRelease)->Release();
-									(*ppInterfaceToRelease) = nullptr;
-								}
-							}
 
-							class Win
+							/*
+								Inherite privately from the dataAquisition class
+								to gain access to the protected data...
+							*/
+							class Win : private data::WinImpl
 							{
 							public:
 								Win();
@@ -1344,18 +1381,11 @@
 								void run();
 							private:
 								static LRESULT CALLBACK	WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-								HRESULT createDeviceIndependentResource();
-								HRESULT createDeviceDependentResource();
-								void discardDeviceResources();
 								HRESULT OnRender();
 								void OnResize(UINT width, UINT height);
 
 							private:
 								HWND m_hwnd;
-								ID2D1Factory* m_pDirect2dFactory;
-								ID2D1HwndRenderTarget* m_pRenderTarget;
-								ID2D1SolidColorBrush* m_pLightSlateGrayBrush;
-								ID2D1SolidColorBrush* m_pCornflowerBlueBrush;
 							};
 
 							class GraphicalUserInterface : public UserInterface, protected Win

@@ -27,7 +27,7 @@
 
 using namespace app;
 
-// int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPInstance, PWSTR pCmdLine, int nCmdShow)
+// int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPInstance, PWSTR pCmdLine, int nCmdShow)
 // {
 // 	//MainWindow win;
 // 	Facade facade;
