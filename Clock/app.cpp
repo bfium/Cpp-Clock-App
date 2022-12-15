@@ -609,10 +609,10 @@ namespace app
 									wcx.lpszClassName = data::lpszClassName;
 									wcx.style = CS_HREDRAW | CS_VREDRAW;
 									wcx.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-									//wcx.hIcon = LoadIcon(GetModuleHandle(NULL), data::lpszAppName);
-									//wcx.hCursor = LoadCursor(NULL, IDC_ARROW);
-									//wcx.cbClsExtra = sizeof(LONG_PTR);
-									//wcx.cbSize = sizeof(WNDCLASSEX);
+									wcx.hIcon = LoadIcon(GetModuleHandle(NULL), data::lpszAppName);
+									wcx.hCursor = LoadCursor(NULL, IDC_ARROW);
+									wcx.cbClsExtra = sizeof(LONG_PTR);
+									wcx.cbSize = sizeof(WNDCLASSEX);
 
 									if (!RegisterClassEx(&wcx))
 										return S_FALSE;
@@ -700,6 +700,9 @@ namespace app
 								pApp = (Win*)pcs->lpCreateParams;
 								pApp->m_hwnd = hWnd;
 
+								// Create the Timer
+								controller::control::timer::ClockTimer t(hWnd,CLOCK_TIMER_ID,100);
+
 								::SetWindowLongPtrW(
 									hWnd,
 									GWLP_USERDATA,
@@ -742,6 +745,13 @@ namespace app
 									case WM_DESTROY:
 									{
 										PostQuitMessage(0);
+									}
+									lr = 1;
+									break;
+									case WM_TIMER:
+									{
+										pApp->OnRender();
+										ValidateRect(hWnd, NULL);
 									}
 									lr = 1;
 									break;

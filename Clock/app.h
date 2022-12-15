@@ -251,7 +251,6 @@
 				{
 				public:
 					virtual~Timer() = default;
-
 				};
 
 			}
@@ -1213,7 +1212,8 @@
 						public:
 							ClockTimer(HWND hWnd, int id, UINT period) :m_hwnd{ hWnd }
 							{
-								SetTimer(hWnd, id, period,TimerProc);
+								//SetTimer(hWnd, id, period,TimerProc);
+								SetTimer(hWnd, id, period,NULL);
 							}
 
 							~ClockTimer()
