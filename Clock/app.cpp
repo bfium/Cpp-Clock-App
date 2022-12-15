@@ -520,7 +520,7 @@ namespace app
 		namespace view
 		{
 			namespace data {
-				WinImpl::WinImpl() :
+				WinImpl::WinImpl(HWND hwnd) :hwnd{ hwnd },
 					m_pDirect2dFactory(NULL),
 					m_pRenderTarget(NULL),
 					m_pLightSlateGrayBrush(NULL),
@@ -537,12 +537,43 @@ namespace app
 
 				HRESULT WinImpl::createDeviceIndependentResource() {
 					HRESULT hr = S_OK;
-
+					hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pDirect2dFactory);
 					return hr;
 				}
 				HRESULT WinImpl::createDeviceDependentResource() {
 					HRESULT hr = S_OK;
+					if (!m_pRenderTarget)
+					{
+						RECT rc;
+						GetClientRect(hwnd, &rc);
 
+						D2D1_SIZE_U size = D2D1::SizeU(
+							rc.right - rc.left,
+							rc.bottom - rc.top
+						);
+
+						hr = m_pDirect2dFactory->CreateHwndRenderTarget(
+							D2D1::RenderTargetProperties(), 
+							D2D1::HwndRenderTargetProperties(hwnd, size), 
+							&m_pRenderTarget
+						);
+
+						if (SUCCEEDED(hr)) {
+							// Create a gray brush.
+							hr = m_pRenderTarget->CreateSolidColorBrush(
+								D2D1::ColorF(D2D1::ColorF::LightSlateGray),
+								&m_pLightSlateGrayBrush
+							);
+							if (SUCCEEDED(hr)) {
+								// Create a blue brush.
+								hr = m_pRenderTarget->CreateSolidColorBrush(
+									D2D1::ColorF(D2D1::ColorF::CornflowerBlue),
+									&m_pCornflowerBlueBrush
+								);
+							}
+						}
+
+					}
 					return hr;
 				}
 				void WinImpl::discardDeviceResources() {
@@ -598,7 +629,7 @@ namespace app
 					namespace gui {
 
 						HRESULT Win::init() {
-							HRESULT hr = createDeviceIndependentResource();
+							HRESULT hr = m_data.createDeviceIndependentResource();
 
 							if (SUCCEEDED(hr)) {
 								//if (/*data::hInst*/)
@@ -629,6 +660,8 @@ namespace app
 										GetModuleHandle(NULL),
 										this
 									);
+
+									m_data.hwnd = m_hwnd;
 
 									if (m_hwnd)
 									{
@@ -673,7 +706,7 @@ namespace app
 								DispatchMessage(&msg);
 							}
 						}
-						Win::Win() : m_hwnd(NULL){
+						Win::Win() :m_data(m_hwnd), m_hwnd(NULL){
 
 						}
 						Win::~Win() {
@@ -701,7 +734,7 @@ namespace app
 								pApp->m_hwnd = hWnd;
 
 								// Create the Timer
-								controller::control::timer::ClockTimer t(hWnd,CLOCK_TIMER_ID,100);
+								controller::control::timer::ClockTimer timer(hWnd,CLOCK_TIMER_ID,1000);
 
 								::SetWindowLongPtrW(
 									hWnd,
@@ -768,6 +801,46 @@ namespace app
 						}
 						HRESULT Win::OnRender() {
 							HRESULT hr = S_OK;
+							hr = m_data.createDeviceDependentResource();
+
+							if (SUCCEEDED(hr)){
+								m_data.m_pRenderTarget->BeginDraw();
+								{
+									m_data.m_pRenderTarget->SetTransform(
+										D2D1::Matrix3x2F::Identity()
+									);
+
+									D2D1_SIZE_F size = m_data.m_pRenderTarget->GetSize();
+
+									const float x = size.width / 2;
+									const float y = size.height / 2;
+
+									const float radius = min(x, y);
+
+									auto ellipse = D2D1::Ellipse(
+										D2D1::Point2F(x, y),
+										radius, 
+										radius
+									);
+
+
+									m_data.m_pRenderTarget->Clear(
+										D2D1::ColorF(D2D1::ColorF::SkyBlue)
+									);
+
+									m_data.m_pRenderTarget->FillEllipse(
+										ellipse, 
+										m_data.m_pCornflowerBlueBrush
+									);
+								}
+								hr = m_data.m_pRenderTarget->EndDraw();
+							}
+
+							if (hr == D2DERR_RECREATE_TARGET)
+							{
+								hr = S_OK;
+								m_data.discardDeviceResources();
+							}
 
 							return hr;
 						}

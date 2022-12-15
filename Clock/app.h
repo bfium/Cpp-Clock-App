@@ -1311,15 +1311,14 @@
 					class WinImpl
 					{
 					public:
-						WinImpl();
+						WinImpl(HWND hwnd);
 						~WinImpl();
 
-					protected:
 						HRESULT createDeviceIndependentResource();
 						HRESULT createDeviceDependentResource();
 						void discardDeviceResources();
 
-					private:
+						HWND hwnd;
 						ID2D1Factory* m_pDirect2dFactory;
 						ID2D1HwndRenderTarget* m_pRenderTarget;
 						ID2D1SolidColorBrush* m_pLightSlateGrayBrush;
@@ -1377,7 +1376,7 @@
 								Inherite privately from the dataAquisition class
 								to gain access to the protected data...
 							*/
-							class Win : private data::WinImpl, public UserInterface
+							class Win : public UserInterface
 							{
 							public:
 								Win();
@@ -1398,6 +1397,9 @@
 
 							private:
 								HWND m_hwnd;
+								data::WinImpl m_data;
+
+								//D2D1_RECT_F m_rectangle;
 							};
 						}
 					}	  // namespace user_interaction
