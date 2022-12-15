@@ -1389,6 +1389,7 @@
 								void sendInput() override;
 								void sendOutput(const char* msg) override;
 								void sendOutput(std::shared_ptr<abstraction::data::Data>d)override;
+								HWND Window() const { return m_hwnd; }
 
 							private:
 								static LRESULT CALLBACK	WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -1396,7 +1397,7 @@
 								void OnResize(UINT width, UINT height);
 
 							private:
-								static HWND m_hwnd;
+								HWND m_hwnd;
 							};
 						}
 					}	  // namespace user_interaction

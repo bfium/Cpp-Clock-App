@@ -597,8 +597,6 @@ namespace app
 
 					namespace gui {
 
-						HWND Win::m_hwnd = NULL;
-
 						HRESULT Win::init() {
 							HRESULT hr = createDeviceIndependentResource();
 
@@ -613,8 +611,8 @@ namespace app
 									wcx.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 									//wcx.hIcon = LoadIcon(GetModuleHandle(NULL), data::lpszAppName);
 									//wcx.hCursor = LoadCursor(NULL, IDC_ARROW);
-									wcx.cbClsExtra = sizeof(LONG_PTR);
-									wcx.cbSize = sizeof(WNDCLASSEX);
+									//wcx.cbClsExtra = sizeof(LONG_PTR);
+									//wcx.cbSize = sizeof(WNDCLASSEX);
 
 									if (!RegisterClassEx(&wcx))
 										return S_FALSE;
@@ -624,11 +622,10 @@ namespace app
 										data::lpszClassName,
 										data::lpszAppName,
 										WS_OVERLAPPEDWINDOW,
-										10, 10,
-										data::defaultAppWidth,
-										data::defaultAppHeight,
+										CW_USEDEFAULT, 0,
+										CW_USEDEFAULT, 0,
 										NULL,
-										data::lpszMenuName,
+										NULL,
 										GetModuleHandle(NULL),
 										this
 									);
@@ -646,13 +643,16 @@ namespace app
 											NULL,
 											newWidth,
 											newHeight,
-											SWP_SHOWWINDOW | SWP_NOMOVE
+											SWP_NOMOVE
 										);
-
+										ShowWindow(m_hwnd, SW_SHOW);
 										UpdateWindow(m_hwnd);
 									}
 									else
 									{
+										auto err = GetLastError();
+										cout << "Last Error :" << err << endl;
+
 										return S_FALSE;
 									}
 								}
@@ -673,7 +673,7 @@ namespace app
 								DispatchMessage(&msg);
 							}
 						}
-						Win::Win()/* : m_hwnd(NULL)*/{
+						Win::Win() : m_hwnd(NULL){
 
 						}
 						Win::~Win() {
@@ -692,23 +692,24 @@ namespace app
 						LRESULT CALLBACK Win::WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
 							LRESULT lr = 0;
+							Win* pApp = NULL;
+
 							if (uMsg == WM_NCCREATE)
 							{
 								LPCREATESTRUCT pcs = (LPCREATESTRUCT)lParam;
-								Win* pApp = (Win*)pcs->lpCreateParams;
+								pApp = (Win*)pcs->lpCreateParams;
+								pApp->m_hwnd = hWnd;
 
 								::SetWindowLongPtrW(
 									hWnd,
 									GWLP_USERDATA,
 									reinterpret_cast<LONG_PTR>(pApp)
 								);
-
-								m_hwnd = hWnd;
 								lr = 1;
 							}
 							else
 							{
-								Win* pApp = reinterpret_cast<Win*>(static_cast<LONG_PTR>(
+								pApp = reinterpret_cast<Win*>(static_cast<LONG_PTR>(
 									::GetWindowLongPtrW(
 										hWnd,
 										GWLP_USERDATA
@@ -744,13 +745,16 @@ namespace app
 									}
 									lr = 1;
 									break;
-
 									default:
 										return DefWindowProc(hWnd, uMsg, wParam, lParam);
 									}
 								}
+								else
+								{
+									return DefWindowProc(hWnd, uMsg, wParam, lParam);
+								}
 							}
-							return 0;
+							return lr;
 						}
 						HRESULT Win::OnRender() {
 							HRESULT hr = S_OK;
