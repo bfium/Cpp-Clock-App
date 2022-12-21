@@ -336,9 +336,9 @@ namespace app
 					registerEvent(ModelProxy::resultAvailable);
 					registerEvent(ModelProxy::adamError);
 
-					m_data["hoursHand"] = data_abstraction::Rectangle(100.0f, 100.0f, 20.0f, 200.0f);
-					m_data["minutesHand"] = data_abstraction::Rectangle(10.0f, 10.0f, 40.0f, 20.0f);
-					m_data["secondsHand"] = data_abstraction::Rectangle(10.0f, 10.0f, 60.0f, 20.0f);
+					m_data["hoursHand"] = data_abstraction::Rectangle(200.0f, 185.0f, 200.0f, 200.0f);
+					m_data["minutesHand"] = data_abstraction::Rectangle(200.0f, 185.0f, 300.0f, 150.0f);
+					m_data["secondsHand"] = data_abstraction::Rectangle(200.0f, 185.0f, 380.0f, 200.0f);
 
 				}
 			}
@@ -742,7 +742,7 @@ namespace app
 								pApp->m_hwnd = hWnd;
 
 								// Create the Timer
-								controller::control::timer::ClockTimer timer(hWnd,CLOCK_TIMER_ID,1000);
+								controller::control::timer::ClockTimer timer(hWnd,CLOCK_TIMER_ID,100);
 
 								::SetWindowLongPtrW(
 									hWnd,
@@ -791,7 +791,18 @@ namespace app
 									break;
 									case WM_TIMER:
 									{
-										pApp->notify(InputEntered, make_shared < data::UserInterfaceIntputData>("12 56 02","timer"));
+										SYSTEMTIME time;
+										GetLocalTime(&time);
+
+										auto hours = time.wHour;
+										auto minuts = time.wMinute;
+										auto seconds = time.wSecond;
+
+										string s_time = to_string(hours)+ " " + to_string(minuts) + " " + to_string(seconds);
+
+										pApp->notify(
+											InputEntered, 
+											make_shared < data::UserInterfaceIntputData>(s_time,"timer"));
 										// pApp->OnRender();
 										// ValidateRect(hWnd, NULL);
 									}
@@ -858,7 +869,7 @@ namespace app
 						HRESULT hr = S_OK;
 						//hr = m_data.createDeviceDependentResource();
 
-							if (SUCCEEDED(hr)){
+						if (SUCCEEDED(hr)){
 								m_data.m_pRenderTarget->BeginDraw();
 								{
 
