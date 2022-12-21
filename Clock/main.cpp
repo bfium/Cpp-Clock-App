@@ -31,7 +31,7 @@ using namespace app;
  {
 	 HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 
-	 Facade facade;// (/*hInst*/);
+	 Facade facade;
 	 facade.run();
 
 	 return 0;

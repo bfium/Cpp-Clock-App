@@ -218,7 +218,7 @@ namespace broker_system
 			return nullptr;
 		}
 
-		std::shared_ptr<abstraction::logic::service::Service> BrokerHandler::getService(const std::string& serviceName) const noexcept
+		std::shared_ptr<abstraction::logic::service::IService> BrokerHandler::getService(const std::string& serviceName) const noexcept
 		{
 			auto ptr = std::find_if(m_services.cbegin(), m_services.cend(), [&serviceName](auto& d)
 				{ return serviceName == d.first; });
@@ -336,7 +336,7 @@ namespace app
 					registerEvent(ModelProxy::resultAvailable);
 					registerEvent(ModelProxy::adamError);
 
-					m_data["hoursHand"] = data_abstraction::Rectangle(10.0f, 10.0f, 20.0f, 20.0f);
+					m_data["hoursHand"] = data_abstraction::Rectangle(100.0f, 100.0f, 20.0f, 200.0f);
 					m_data["minutesHand"] = data_abstraction::Rectangle(10.0f, 10.0f, 40.0f, 20.0f);
 					m_data["secondsHand"] = data_abstraction::Rectangle(10.0f, 10.0f, 60.0f, 20.0f);
 
@@ -359,7 +359,7 @@ namespace app
 					virtual void executeCommand(abstraction::data::command::unique_command_ptr c) = 0;
 					virtual void undo() = 0;
 					virtual void redo() = 0;
-					virtual void refresh() = 0;
+					virtual void update() = 0;
 				};
 
 				class ServerCoordinator::UndoRedoStackStrategy : public ServerCoordinator::ServerCoordinatorImpl
@@ -371,7 +371,7 @@ namespace app
 					void executeCommand(abstraction::data::command::unique_command_ptr c) override;
 					void undo() override;
 					void redo() override;
-					void refresh() override;
+					void update() override;
 
 				private:
 					void flushStack(stack<abstraction::data::command::unique_command_ptr>& st);
@@ -401,8 +401,8 @@ namespace app
 					d->execute();
 				}
 
-				void ServerCoordinator::UndoRedoStackStrategy::refresh() {
-					// browser_system::server_subsystem::boundary::proxy::ModelProxy::getInstance().refresh();
+				void ServerCoordinator::UndoRedoStackStrategy::update() {
+					// browser_system::server_subsystem::boundary::proxy::ModelProxy::getInstance().update();
 
 					//if (getUndoSize() == 0) return;
 					//
@@ -467,9 +467,9 @@ namespace app
 				{
 					pimpl_->undo();
 				}
-				void ServerCoordinator::refresh()
+				void ServerCoordinator::update()
 				{
-					pimpl_->refresh();
+					pimpl_->update();
 				}
 				void ServerCoordinator::redo()
 				{
@@ -706,11 +706,11 @@ namespace app
 								DispatchMessage(&msg);
 							}
 						}
-						Win::Win() :m_data(m_hwnd), m_hwnd(NULL){
+						Win::Win() :m_hwnd(NULL),m_data(m_hwnd){
 
 						}
 						Win::~Win() {
-
+							m_data.~WinImpl();
 						}
 						void Win::sendInput() {
 
@@ -719,7 +719,15 @@ namespace app
 
 						}
 						void Win::sendOutput(std::shared_ptr<abstraction::data::Data>d) {
+							auto data = dynamic_pointer_cast<server_subsystem::data_abstraction::ModelOutputData>(d);
 
+							if (data)
+							{
+								auto rect = data->getRectangle();
+								auto angle = data->getAngle();
+
+								OnHandRender(rect, angle);
+							}
 						}
 
 						LRESULT CALLBACK Win::WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -783,8 +791,9 @@ namespace app
 									break;
 									case WM_TIMER:
 									{
-										pApp->OnRender();
-										ValidateRect(hWnd, NULL);
+										pApp->notify(InputEntered, make_shared < data::UserInterfaceIntputData>("12 56 02","timer"));
+										// pApp->OnRender();
+										// ValidateRect(hWnd, NULL);
 									}
 									lr = 1;
 									break;
@@ -799,6 +808,7 @@ namespace app
 							}
 							return lr;
 						}
+
 						HRESULT Win::OnRender() {
 							HRESULT hr = S_OK;
 							hr = m_data.createDeviceDependentResource();
@@ -844,6 +854,53 @@ namespace app
 
 							return hr;
 						}
+						HRESULT Win::OnHandRender(const server_subsystem::data_abstraction::Rectangle& rec, float angle){
+						HRESULT hr = S_OK;
+						//hr = m_data.createDeviceDependentResource();
+
+							if (SUCCEEDED(hr)){
+								m_data.m_pRenderTarget->BeginDraw();
+								{
+
+									D2D1_SIZE_F size = m_data.m_pRenderTarget->GetSize();
+									D2D1_RECT_F rectangle = D2D1::RectF(
+										rec.getLeft(), 
+										rec.getTop(), 
+										rec.getRight(), 
+										rec.getBottom()
+									);
+
+									const float x = size.width / 2;
+									const float y = size.height / 2;
+																
+									m_data.m_pRenderTarget->SetTransform(
+										D2D1::Matrix3x2F::Rotation(
+											angle, 
+											D2D1::Point2F(x, y)
+										)
+									);
+
+									//m_data.m_pRenderTarget->Clear(
+									//	D2D1::ColorF(D2D1::ColorF::SkyBlue)
+									//);
+
+									m_data.m_pRenderTarget->FillRectangle(rectangle,
+										 
+										m_data.m_pLightSlateGrayBrush
+									);
+								}
+								hr = m_data.m_pRenderTarget->EndDraw();
+							}
+
+							if (hr == D2DERR_RECREATE_TARGET)
+							{
+								hr = S_OK;
+								m_data.discardDeviceResources();
+							}
+
+							return hr;
+						}
+						
 						void Win::OnResize(UINT width, UINT height) {
 
 						}
@@ -1043,8 +1100,8 @@ namespace app
 					void ClientCoordinator::undo() {
 						m_server_coordinator.undo();
 					}
-					void ClientCoordinator::refresh() {
-						m_server_coordinator.refresh();
+					void ClientCoordinator::update() {
+						m_server_coordinator.update();
 					}
 
 					void ClientCoordinator::redo() {

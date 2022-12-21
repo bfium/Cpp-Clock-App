@@ -167,10 +167,10 @@
 			namespace business
 			{
 				// Class Command;
-				class Manager
+				class IManager
 				{
 				public:
-					virtual ~Manager() = default;
+					virtual ~IManager() = default;
 					virtual void execute(data::command::Command* data) noexcept = 0;
 					// virtual const char *execute(data::InputData *data) noexcept = 0;
 				};
@@ -182,10 +182,10 @@
 
 			namespace service
 			{
-				class Service
+				class IService
 				{
 				public:
-					virtual ~Service() = default;
+					virtual ~IService() = default;
 					virtual std::string getName() const = 0;
 					virtual abstraction::data::OutputData* transform(std::shared_ptr<abstraction::data::InputData> d) = 0;
 					virtual const std::string getServiceDescription() const = 0;
@@ -199,10 +199,10 @@
 		{
 			namespace user_interaction
 			{
-				class UserInteraction
+				class IUserInteraction
 				{
 				public:
-					virtual ~UserInteraction() = default;
+					virtual ~IUserInteraction() = default;
 					virtual void sendInput() = 0;
 					virtual void sendOutput(const char*) = 0;
 					virtual void sendOutput(std::shared_ptr<abstraction::data::Data>d) = 0;
@@ -540,7 +540,7 @@
 						I need an Intent Communication Builder or
 						a Fluent API Builder
 					 */
-					class HtmlService : public abstraction::logic::service::Service
+					class HtmlService : public abstraction::logic::service::IService
 					{
 					public:
 						static const std::string name;
@@ -573,7 +573,7 @@
 				{
 				};
 			}
-			class Logger : public abstraction::logic::service::Service
+			class Logger : public abstraction::logic::service::IService
 			{
 				// to be add in the concrete Logger
 				static const std::string name;
@@ -599,7 +599,7 @@
 				};
 			}
 
-			class Publisher : public abstraction::logic::service::Service
+			class Publisher : public abstraction::logic::service::IService
 			{
 				static const std::string name;
 				class PublisherImpl;
@@ -686,7 +686,7 @@
 
 				namespace service
 				{
-					class TokenizerService : public abstraction::logic::service::Service
+					class TokenizerService : public abstraction::logic::service::IService
 					{
 						static const std::string name; // = "tokenizer";
 					public:
@@ -724,7 +724,7 @@
 					return instance;
 				}
 				~BrokerForwarder() = default;
-				bool registerService(std::unique_ptr<abstraction::logic::service::Service> s) noexcept
+				bool registerService(std::unique_ptr<abstraction::logic::service::IService> s) noexcept
 				{
 					return false;
 				}
@@ -736,7 +736,7 @@
 					
 					m_services.insert(std::make_pair("tokenizer", std::make_unique<service_system::tokenizer::logic::service::TokenizerService>()));
 				}
-				std::unordered_map<std::string, std::unique_ptr<abstraction::logic::service::Service>> m_services;
+				std::unordered_map<std::string, std::unique_ptr<abstraction::logic::service::IService>> m_services;
 
 			private:
 				BrokerForwarder(const BrokerForwarder&) = delete;
@@ -753,8 +753,8 @@
 					return instance;
 				}
 				~BrokerHandler() = default;
-				bool registerService(std::shared_ptr<abstraction::logic::service::Service> s) noexcept;
-				std::shared_ptr<abstraction::logic::service::Service> getService(const std::string& serviceName) const noexcept;
+				bool registerService(std::shared_ptr<abstraction::logic::service::IService> s) noexcept;
+				std::shared_ptr<abstraction::logic::service::IService> getService(const std::string& serviceName) const noexcept;
 			private:
 				BrokerHandler() : m_services{}
 				{
@@ -762,7 +762,7 @@
 					
 					m_services.insert(std::make_pair("tokenizer", std::make_unique<service_system::tokenizer::logic::service::TokenizerService>()));
 				}
-				std::unordered_map<std::string, std::shared_ptr<abstraction::logic::service::Service>> m_services;
+				std::unordered_map<std::string, std::shared_ptr<abstraction::logic::service::IService>> m_services;
 
 			private:
 				BrokerHandler(const BrokerHandler&) = delete;
@@ -791,7 +791,7 @@
 					return instance;
 				}
 				~BrokerDiscoverer() = default;
-				bool registerService(RegisteredServiceType serviceType, std::unique_ptr<abstraction::logic::service::Service> s) noexcept;
+				bool registerService(RegisteredServiceType serviceType, std::unique_ptr<abstraction::logic::service::IService> s) noexcept;
 				std::vector<std::string> getService(RegisteredServiceType serviceType) const;
 				std::shared_ptr<abstraction::data::OutputData> forward(const std::string& serviceName, const abstraction::data::InputData& data) const noexcept;
 
@@ -799,7 +799,7 @@
 				BrokerDiscoverer() : m_services{}
 				{
 				}
-				std::vector<std::pair<RegisteredServiceType, std::unique_ptr<abstraction::logic::service::Service>>> m_services;
+				std::vector<std::pair<RegisteredServiceType, std::unique_ptr<abstraction::logic::service::IService>>> m_services;
 
 			private:
 				BrokerDiscoverer(const BrokerDiscoverer&) = delete;
@@ -975,7 +975,7 @@
 					class ModelObserver : public abstraction::boundary::proxy::Observer
 					{
 					public:
-						explicit ModelObserver(abstraction::boundary::user_interaction::UserInteraction& ui)
+						explicit ModelObserver(abstraction::boundary::user_interaction::IUserInteraction& ui)
 							: Observer("ModelObserver"),
 							m_ui{ ui }
 						{}
@@ -984,7 +984,7 @@
 						void notifyImpl(std::shared_ptr<abstraction::data::Data>) override;
 
 					private:
-						abstraction::boundary::user_interaction::UserInteraction& m_ui;
+						abstraction::boundary::user_interaction::IUserInteraction& m_ui;
 					};
 
 					enum class HandID
@@ -1054,7 +1054,7 @@
 
 						void undo();
 						void redo();
-						void refresh();
+						void update();
 					private:
 						std::unique_ptr<ServerCoordinatorImpl> pimpl_;
 
@@ -1108,7 +1108,7 @@
 				{
 					namespace user_interaction
 					{
-						class UserInterface : public abstraction::boundary::user_interaction::UserInteraction, protected service_system::publisher::Publisher
+						class UserInterface : public abstraction::boundary::user_interaction::IUserInteraction, protected service_system::publisher::Publisher
 						{
 						public:
 							static const char* InputEntered;
@@ -1175,7 +1175,7 @@
 							void executeCommand(abstraction::data::command::unique_command_ptr c);
 							void undo();
 							void redo();
-							void refresh();
+							void update();
 
 						private:
 							server_subsystem::control::coordinator::ServerCoordinator m_server_coordinator;
@@ -1270,7 +1270,6 @@
 					static INT defaultAppPosX = 100;
 					static INT defaultAppPosY = 100;
 					//HINSTANCE hInst;
-
 					class UserInterfaceIntputData : public abstraction::data::InputData
 					{
 					public:
@@ -1293,26 +1292,13 @@
 					private:
 						std::string uii;
 					};
-					class UserInterfaceData : public abstraction::data::Data
-					{
-					public:
-						UserInterfaceData(const std::string& userInput, const std::string& Sender = "")
-							: uii{ userInput },
-							sender_{ Sender } {}
-						const std::string& getData() const { return uii; }
-						const std::string& getSender() const { return sender_; }
-
-					private:
-						std::string uii;
-						std::string sender_;
-					};
 
 					// for all the data needed in the Win class.
 					class WinImpl
 					{
 					public:
 						WinImpl(HWND hwnd);
-						~WinImpl();
+						virtual~WinImpl();
 
 						HRESULT createDeviceIndependentResource();
 						HRESULT createDeviceDependentResource();
@@ -1323,7 +1309,6 @@
 						ID2D1HwndRenderTarget* m_pRenderTarget;
 						ID2D1SolidColorBrush* m_pLightSlateGrayBrush;
 						ID2D1SolidColorBrush* m_pCornflowerBlueBrush;
-
 					};
 
 
@@ -1393,6 +1378,7 @@
 							private:
 								static LRESULT CALLBACK	WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 								HRESULT OnRender();
+								HRESULT OnHandRender(const server_subsystem::data_abstraction::Rectangle& rec, float angle);
 								void OnResize(UINT width, UINT height);
 
 							private:
