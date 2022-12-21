@@ -778,7 +778,7 @@ namespace app
 									break;
 									case WM_PAINT:
 									{
-										pApp->OnRender();
+										pApp->OnCircleRender();
 										ValidateRect(hWnd, NULL);
 									}
 									lr = 0;
@@ -803,7 +803,7 @@ namespace app
 										pApp->notify(
 											InputEntered, 
 											make_shared < data::UserInterfaceIntputData>(s_time,"timer"));
-										// pApp->OnRender();
+										// pApp->OnCircleRender();
 										// ValidateRect(hWnd, NULL);
 									}
 									lr = 1;
@@ -820,7 +820,7 @@ namespace app
 							return lr;
 						}
 
-						HRESULT Win::OnRender() {
+						HRESULT Win::OnCircleRender() {
 							HRESULT hr = S_OK;
 							hr = m_data.createDeviceDependentResource();
 
@@ -872,6 +872,9 @@ namespace app
 						if (SUCCEEDED(hr)){
 								m_data.m_pRenderTarget->BeginDraw();
 								{
+									// m_data.m_pRenderTarget->Clear(
+									// 	D2D1::ColorF(D2D1::ColorF::SkyBlue)
+									// );
 
 									D2D1_SIZE_F size = m_data.m_pRenderTarget->GetSize();
 									D2D1_RECT_F rectangle = D2D1::RectF(
@@ -891,17 +894,19 @@ namespace app
 										)
 									);
 
-									//m_data.m_pRenderTarget->Clear(
-									//	D2D1::ColorF(D2D1::ColorF::SkyBlue)
-									//);
-
-									m_data.m_pRenderTarget->FillRectangle(rectangle,
-										 
+									m_data.m_pRenderTarget->FillRectangle(
+										rectangle,										
 										m_data.m_pLightSlateGrayBrush
 									);
+
+									// Restore the identity transformation.
+									m_data.m_pRenderTarget->SetTransform(
+										D2D1::Matrix3x2F::Identity()
+									);
+
 								}
 								hr = m_data.m_pRenderTarget->EndDraw();
-							}
+						}
 
 							if (hr == D2DERR_RECREATE_TARGET)
 							{

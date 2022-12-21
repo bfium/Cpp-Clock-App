@@ -1377,7 +1377,7 @@
 
 							private:
 								static LRESULT CALLBACK	WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-								HRESULT OnRender();
+								HRESULT OnCircleRender();
 								HRESULT OnHandRender(const server_subsystem::data_abstraction::Rectangle& rec, float angle);
 								void OnResize(UINT width, UINT height);
 
