@@ -357,8 +357,6 @@ namespace app
 					virtual size_t getRedoSize() const = 0;
 
 					virtual void executeCommand(abstraction::data::command::unique_command_ptr c) = 0;
-					virtual void undo() = 0;
-					virtual void redo() = 0;
 					virtual void update() = 0;
 				};
 
@@ -369,13 +367,9 @@ namespace app
 					size_t getRedoSize() const override { return redoStack_.size(); }
 
 					void executeCommand(abstraction::data::command::unique_command_ptr c) override;
-					void undo() override;
-					void redo() override;
 					void update() override;
 
 				private:
-					void flushStack(stack<abstraction::data::command::unique_command_ptr>& st);
-
 					stack<abstraction::data::command::unique_command_ptr> undoStack_;
 					stack<abstraction::data::command::unique_command_ptr> redoStack_;
 				};
@@ -383,23 +377,8 @@ namespace app
 				void ServerCoordinator::UndoRedoStackStrategy::executeCommand(abstraction::data::command::unique_command_ptr c)
 				{
 					c->execute();
-
-					undoStack_.push(std::move(c));
-					flushStack(redoStack_);
 				}
 
-				void ServerCoordinator::UndoRedoStackStrategy::undo()
-				{
-					if (getUndoSize() == 0) return;
-
-					auto& c = undoStack_.top();
-					redoStack_.push(std::move(c));
-					undoStack_.pop();
-
-					if (getUndoSize() == 0) return;
-					auto& d = undoStack_.top();
-					d->execute();
-				}
 
 				void ServerCoordinator::UndoRedoStackStrategy::update() {
 					// browser_system::server_subsystem::boundary::proxy::ModelProxy::getInstance().update();
@@ -411,22 +390,6 @@ namespace app
 
 				}
 
-				void ServerCoordinator::UndoRedoStackStrategy::redo()
-				{
-					if (getRedoSize() == 0) return;
-
-					auto& c = redoStack_.top();
-					c->execute();
-
-					undoStack_.push(std::move(c));
-					redoStack_.pop();
-				}
-
-				void ServerCoordinator::UndoRedoStackStrategy::flushStack(stack<abstraction::data::command::unique_command_ptr>& st)
-				{
-					while (!st.empty())
-						st.pop();
-				}
 
 				ServerCoordinator::ServerCoordinator(UndoRedoStrategy st)
 				{
@@ -454,26 +417,10 @@ namespace app
 					//cout << "The Command arrived at Server Side " << endl;
 					pimpl_->executeCommand(std::move(c));
 				}
-				size_t ServerCoordinator::getUndoSize() const
-				{
-					return pimpl_->getUndoSize();
-				}
 
-				size_t ServerCoordinator::getRedoSize() const
-				{
-					return pimpl_->getRedoSize();
-				}
-				void ServerCoordinator::undo()
-				{
-					pimpl_->undo();
-				}
 				void ServerCoordinator::update()
 				{
 					pimpl_->update();
-				}
-				void ServerCoordinator::redo()
-				{
-					pimpl_->redo();
 				}
 
 				class ServerCoordinator::UndoRedoListStrategyVector
@@ -520,6 +467,7 @@ namespace app
 		namespace view
 		{
 			namespace data {
+
 				WinImpl::WinImpl(HWND hwnd) :hwnd{ hwnd },
 					m_pDirect2dFactory(NULL),
 					m_pRenderTarget(NULL),
@@ -1113,15 +1061,8 @@ namespace app
 						m_server_coordinator.executeCommand(std::move(c));
 					}
 
-					void ClientCoordinator::undo() {
-						m_server_coordinator.undo();
-					}
 					void ClientCoordinator::update() {
 						m_server_coordinator.update();
-					}
-
-					void ClientCoordinator::redo() {
-						m_server_coordinator.redo();
 					}
 				}
 
@@ -1147,19 +1088,10 @@ namespace app
 					{
 						if (command == "exit")
 							return;
-						else if (command == "undo")
-						{
-							clientCoordinator.undo();
-						}
-						else if (command == "redo")
-						{
-							clientCoordinator.redo();
-						}
 						else if (sender == "timer") {
 							clientCoordinator.executeCommand(
 								abstraction::data::command::make_unique_command_ptr(
-									new data_abstraction::UpdateCommand(command)
-								)
+									new data_abstraction::UpdateCommand(command))
 							);							
 						}
 						else

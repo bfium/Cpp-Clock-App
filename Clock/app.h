@@ -1173,8 +1173,6 @@
 							ClientCoordinator(/* args */) :m_server_coordinator{} {}
 							~ClientCoordinator() {}
 							void executeCommand(abstraction::data::command::unique_command_ptr c);
-							void undo();
-							void redo();
 							void update();
 
 						private:
