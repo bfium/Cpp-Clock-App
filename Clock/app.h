@@ -67,7 +67,7 @@
 			{
 			public:
 				virtual~Shape() = default;
-
+				virtual std::string getName()const = 0;
 			};
 
 
@@ -177,7 +177,13 @@
 			}
 			namespace algorithm
 			{
-				// RAS
+				class IShapeFactory 
+				{
+				public:
+					virtual~IShapeFactory() = default;
+					virtual std::shared_ptr<data::Shape> create(const std::string& type) = 0;
+				};
+
 			}
 
 			namespace service
@@ -890,6 +896,16 @@
 						m_rec.right = right;
 						m_rec.bottom = bottom;
 					}
+					std::string getName()const override { return "Rectangle"; }
+
+					bool operator==(const Rectangle& other) const
+					{
+						return m_rec.left == other.m_rec.left &&
+						m_rec.top == other.m_rec.top &&
+						m_rec.right == other.m_rec.right &&
+						m_rec.bottom == other.m_rec.bottom;
+
+					}
 
 					float getLeft()const { return m_rec.left; }
 					float getTop()const { return m_rec.top; }
@@ -935,10 +951,17 @@
 					float m_fAngle;
 				};
 
+				enum class ShapeID
+				{
+					HOURS,
+					SECOND,
+					MINUTS,
+					CIRCLE
+				};
 
 				class ModelProxyImpl
 				{
-					using Model = std::map<std::string, Rectangle>;
+					using Model = std::map<std::string, std::shared_ptr<abstraction::data::Shape>>;
 				public:
 					using const_iterator = Model::const_iterator;
 					using const_reference = Model::const_reference;
@@ -950,6 +973,7 @@
 				public:
 					const_iterator cbegin()const { return m_data.cbegin(); }
 					const_iterator cend()const { return m_data.cend(); }
+					std::shared_ptr<abstraction::data::Shape> getShape(const std::string& name)const;
 
 				private:
 					void initialize()noexcept;
@@ -987,13 +1011,6 @@
 						abstraction::boundary::user_interaction::IUserInteraction& m_ui;
 					};
 
-					enum class HandID
-					{
-						HOURS,
-						SECOND,
-						MINUTS
-					};
-
 					class ModelProxy :/*private data_abstraction::AdamProxyImpl,*/ protected service_system::publisher::Publisher
 					{
 					public:
@@ -1012,7 +1029,7 @@
 						ModelProxy();
 
 					private:
-						//data_abstraction::ModelProxyImpl m_data;
+						data_abstraction::ModelProxyImpl m_data_;
 						using Model = std::map<std::string, data_abstraction::Rectangle>;
 						Model m_data;
 					};

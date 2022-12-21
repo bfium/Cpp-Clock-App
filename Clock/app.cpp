@@ -260,10 +260,20 @@ namespace app
 
 			void ModelProxyImpl::initialize()noexcept
 			{
-				m_data["hoursHand"] = Rectangle(10.0f, 10.0f, 20.0f,20.0f);
-				m_data["minutesHand"] = Rectangle(10.0f, 10.0f, 40.0f,20.0f);
-				m_data["secondsHand"] = Rectangle(10.0f, 10.0f, 60.0f,20.0f);
+				m_data["hoursHand"] = std::make_shared<Rectangle>(Rectangle(200.0f, 185.0f, 200.0f, 200.0f));
+				m_data["minutesHand"] = std::make_shared<Rectangle>(Rectangle(200.0f, 185.0f, 300.0f, 150.0f));
+				m_data["secondsHand"] = std::make_shared<Rectangle>(Rectangle(200.0f, 185.0f, 380.0f, 200.0f));
+
 			}
+			std::shared_ptr<abstraction::data::Shape> ModelProxyImpl::getShape(const std::string& name)const {
+				//auto ptr = std::find(m_data.cbegin(), m_data.cend(), [&](const auto&) {
+				//	return d.first == name; });
+
+				//if (ptr != m_data.cend())
+				//	return ptr->second;
+				return nullptr;
+			}
+
 		}
 
 		namespace boundary
@@ -332,12 +342,12 @@ namespace app
 					static ModelProxy instance;
 					return instance;
 				}
-				ModelProxy::ModelProxy() :/*AdamProxyImpl()*/ m_data{} {
+				ModelProxy::ModelProxy() :/*AdamProxyImpl()*/ m_data{}, m_data_{}{
 					registerEvent(ModelProxy::resultAvailable);
 					registerEvent(ModelProxy::adamError);
 
-					m_data["hoursHand"] = data_abstraction::Rectangle(200.0f, 185.0f, 200.0f, 200.0f);
-					m_data["minutesHand"] = data_abstraction::Rectangle(200.0f, 185.0f, 300.0f, 150.0f);
+					m_data["hoursHand"] = data_abstraction::Rectangle(200.0f, 185.0f, 200.0f, 100.0f);
+					m_data["minutesHand"] = data_abstraction::Rectangle(200.0f, 185.0f, 290.0f, 200.0f);
 					m_data["secondsHand"] = data_abstraction::Rectangle(200.0f, 185.0f, 380.0f, 200.0f);
 
 				}
