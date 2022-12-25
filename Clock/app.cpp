@@ -8,35 +8,6 @@ using namespace std;
 
 namespace service_system
 {
-	namespace html
-	{
-		namespace data
-		{
-
-		}
-
-		namespace boundary
-		{
-			namespace proxy
-			{
-
-			} // namespace proxy
-		}
-
-		namespace logic
-		{
-			namespace business
-			{
-
-			} // namespace business
-
-			namespace service
-			{
-				const std::string HtmlService::name = "html";
-			}
-		}
-	}
-
 	namespace publisher
 	{
 		const std::string Publisher::name = "publisher";
