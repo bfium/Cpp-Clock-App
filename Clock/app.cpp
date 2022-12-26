@@ -689,6 +689,17 @@ namespace app
 									)));
 								if (pApp)
 								{
+
+									SYSTEMTIME time;
+									GetLocalTime(&time);
+
+									auto hours = time.wHour;
+									auto minuts = time.wMinute;
+									auto seconds = time.wSecond;
+
+									string s_time = to_string(hours) + " " + to_string(minuts) + " " + to_string(seconds);
+
+
 									switch (uMsg)
 									{
 									case WM_SIZE:
@@ -707,8 +718,10 @@ namespace app
 									break;
 									case WM_PAINT:
 									{
-										pApp->OnCircleRender();
-										ValidateRect(hWnd, NULL);
+										pApp->notify(
+											InputEntered,
+											make_shared < data::UserInterfaceIntputData>(s_time, "timer"));
+										//ValidateRect(hWnd, NULL);
 									}
 									lr = 0;
 									break;
@@ -720,15 +733,6 @@ namespace app
 									break;
 									case WM_TIMER:
 									{
-										SYSTEMTIME time;
-										GetLocalTime(&time);
-
-										auto hours = time.wHour;
-										auto minuts = time.wMinute;
-										auto seconds = time.wSecond;
-
-										string s_time = to_string(hours)+ " " + to_string(minuts) + " " + to_string(seconds);
-
 										pApp->notify(
 											InputEntered, 
 											make_shared < data::UserInterfaceIntputData>(s_time,"timer"));
@@ -749,11 +753,11 @@ namespace app
 							return lr;
 						}
 
-						HRESULT Win::OnCircleRender() {
+						HRESULT Win::OnRender(const abstraction::data::Shape& s, float angle)	{
 							HRESULT hr = S_OK;
 							hr = m_data.createDeviceDependentResource();
 
-							if (SUCCEEDED(hr)){
+							if (SUCCEEDED(hr)) {
 								m_data.m_pRenderTarget->BeginDraw();
 								{
 									m_data.m_pRenderTarget->SetTransform(
@@ -769,7 +773,7 @@ namespace app
 
 									auto ellipse = D2D1::Ellipse(
 										D2D1::Point2F(x, y),
-										radius, 
+										radius,
 										radius
 									);
 
@@ -779,9 +783,13 @@ namespace app
 									);
 
 									m_data.m_pRenderTarget->FillEllipse(
-										ellipse, 
+										ellipse,
 										m_data.m_pCornflowerBlueBrush
 									);
+									
+									//auto re = static_cast<server_subsystem::data_abstraction::Rectangle>(s);
+									//if(re)
+									//	OnHandRender(s, angle); 
 								}
 								hr = m_data.m_pRenderTarget->EndDraw();
 							}
@@ -791,19 +799,19 @@ namespace app
 								hr = S_OK;
 								m_data.discardDeviceResources();
 							}
-
 							return hr;
 						}
+
 						HRESULT Win::OnHandRender(const server_subsystem::data_abstraction::Rectangle& rec, float angle){
 						HRESULT hr = S_OK;
-						//hr = m_data.createDeviceDependentResource();
+						hr = m_data.createDeviceDependentResource();
 
 						if (SUCCEEDED(hr)){
 								m_data.m_pRenderTarget->BeginDraw();
 								{
-									// m_data.m_pRenderTarget->Clear(
-									// 	D2D1::ColorF(D2D1::ColorF::SkyBlue)
-									// );
+									 //m_data.m_pRenderTarget->Clear(
+									 //	D2D1::ColorF(D2D1::ColorF::SkyBlue)
+									 //);
 
 									D2D1_SIZE_F size = m_data.m_pRenderTarget->GetSize();
 									D2D1_RECT_F rectangle = D2D1::RectF(
